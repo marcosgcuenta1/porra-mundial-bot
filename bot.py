@@ -231,6 +231,14 @@ def ranking(porras, results):
     return rows
 
 
+def rank_line(i, name, pts, is_me):
+    """Una fila de clasificación. Top 3 con medalla (oro/plata/bronce) y en negrita."""
+    medal = {0: "🥇", 1: "🥈", 2: "🥉"}.get(i)
+    pos = medal if medal else "{}º".format(i + 1)
+    line = "{} {} — {} pts".format(pos, name, pts)
+    return "<b>{}</b>".format(line) if (medal or is_me) else line
+
+
 def ranking_block(porras, results, my_pid):
     if my_pid is None:
         return ""
@@ -245,8 +253,7 @@ def ranking_block(porras, results, my_pid):
     lines = ["<b>Clasificación actual</b>"]
     for i in range(start, end):
         pid, name, pts = rk[i]
-        line = "{}º {} — {} pts".format(i + 1, name, pts)
-        lines.append("<b>{}</b>".format(line) if pid == my_pid else line)
+        lines.append(rank_line(i, name, pts, pid == my_pid))
     return "\n".join(lines)
 
 
@@ -321,9 +328,8 @@ def cmd_ranking_full(token, cid, pid, porras):
         send(token, cid, "Aún no hay clasificación.")
         return
     lines = ["<b>Clasificación completa</b>"]
-    for i, (p_id, name, pts) in enumerate(rk, 1):
-        line = "{}º {} — {} pts".format(i, name, pts)
-        lines.append("<b>{}</b>".format(line) if p_id == pid else line)
+    for i, (p_id, name, pts) in enumerate(rk):
+        lines.append(rank_line(i, name, pts, p_id == pid))
     send(token, cid, "\n".join(lines))
 
 
