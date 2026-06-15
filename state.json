@@ -1,5 +1,14 @@
 {
   "comienzo": [],
   "final": [],
-  "seeded": false
+  "seeded": false,
+  "tg_offset": 118763858,
+  "identity": {
+    "confirmed": false,
+    "pid": null,
+    "name": null,
+    "asked": true,
+    "stage": "awaiting_name",
+    "candidates": []
+  }
 }
