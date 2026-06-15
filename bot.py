@@ -386,7 +386,7 @@ def process_chat(token, porras, state, updates):
         else:
             u["stage"] = "awaiting_confirm"
             u["candidates"] = [p["id"] for p in cands]
-            txt = "¿Confirmas que eres:?" if len(cands) == 1 else "He encontrado varios. ¿Cuál eres?"
+            txt = "Pulsa tu nombre para confirmar:"
             send(token, cid, txt, reply_markup=confirm_keyboard(cands))
 
 
