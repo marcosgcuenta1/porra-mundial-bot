@@ -3,12 +3,14 @@
   "final": [],
   "seeded": false,
   "tg_offset": 118763863,
-  "identity": {
-    "confirmed": true,
-    "pid": 20,
-    "name": "Marcos Gracia Arrondo",
-    "asked": true,
-    "stage": "done",
-    "candidates": []
+  "users": {
+    "1104050697": {
+      "pid": 20,
+      "name": "Marcos Gracia Arrondo",
+      "confirmed": true,
+      "asked": true,
+      "stage": "done",
+      "candidates": []
+    }
   }
 }
