@@ -6,7 +6,9 @@ name: Bot Porra Mundial
 on:
   workflow_dispatch: {}
   schedule:
-    - cron: "*/30 * * * *"
+    # Cada 30 min, en minutos poco congestionados (GitHub dispara los cron de :00/:30
+    # peor que los demás). Si aun así se salta uno, el proceso sigue vivo hasta ~5h50.
+    - cron: "13,43 * * * *"
 
 permissions:
   contents: write
@@ -18,7 +20,7 @@ concurrency:
 jobs:
   run:
     runs-on: ubuntu-latest
-    timeout-minutes: 55
+    timeout-minutes: 358
     steps:
       - uses: actions/checkout@v4
 

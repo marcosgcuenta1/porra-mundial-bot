@@ -622,7 +622,9 @@ def run_loop():
     porras_ts = time.monotonic()
     last_match = 0.0
     start = time.monotonic()
-    MAX_RUN = 50 * 60  # el workflow lo refresca cada 30 min; esto es el tope de seguridad
+    # El proceso vive hasta ~5h50 (cerca del límite de 6h de un job). Así, si el cron de
+    # relevo se salta una vez, el bot sigue escuchando en vez de caerse.
+    MAX_RUN = int(os.environ.get("LOOP_MINUTES", "350")) * 60
     print("Bot escuchando (long-polling). Usuarios: {}.".format(len(state["users"])))
 
     while time.monotonic() - start < MAX_RUN:
