@@ -2,19 +2,35 @@
 
 Bot de Telegram que, durante la fase de grupos del Mundial 2026:
 
-- **Al comienzo de cada partido** te manda tu pronóstico de la porra
-  (el ganador que marcaste, en **negrita**; si pusiste empate, nadie en negrita).
-- **Al terminar** te manda el resultado con ✅ si acertaste o ❌ si no.
+- **Al comienzo de cada partido** te manda tu pronóstico de la porra, con los equipos
+  en código FIFA de 3 letras y tu ganador en **negrita** (empate: nadie en negrita).
+- **Al terminar** te manda el resultado (✅ si acertaste, ❌ si no) y tu zona de la
+  clasificación.
+- La primera vez te pregunta **¿quién eres?** para saber qué fila resaltar en el ranking.
 
 Ejemplo:
 
 ```
-Comienzo de 🇪🇸 España - Corea del Sur 🇰🇷
-Final: 🇪🇸 España 1-0 Corea del Sur 🇰🇷 ✅
+Comienzo de 🇪🇸 ESP - KOR 🇰🇷
+
+✅ Final: 🇪🇸 ESP 1-0 KOR 🇰🇷
+
+Clasificación actual
+4º Fulano De Tal — 9 pts
+5º Mengano Perez — 6 pts
+6º Marcos Gracia Arrondo — 6 pts   (en negrita)
+7º Zutano Lopez — 3 pts
+8º Perengano Ruiz — 3 pts
 ```
 
-La porra está en [`data.py`](data.py) (extraída de `porra-marcos-gracia-arrondo.pdf`).
-Los resultados y horarios se sacan de [football-data.org](https://www.football-data.org).
+Tu pronóstico de cada partido sale de [`data.py`](data.py) (de `porra-marcos-gracia-arrondo.pdf`).
+Los resultados/horarios, de [football-data.org](https://www.football-data.org).
+La clasificación se calcula igual que la web oficial
+[NFQ World Cup](https://cesaresteban.github.io/NFQ-WORLD-CUP/) (participantes y porras
+desde su Supabase; 3 puntos por cada 1/X/2 acertado en grupos).
+
+> El chat (el "¿quién eres?") funciona en cuanto estén los secrets de Telegram.
+> Los avisos de partidos necesitan además `FOOTBALL_DATA_TOKEN`.
 
 ---
 
