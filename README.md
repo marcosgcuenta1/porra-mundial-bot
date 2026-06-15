@@ -26,61 +26,30 @@ Clasificación actual
 8º Perengano Ruiz — 3 pts
 ```
 
-Tu pronóstico de cada partido sale de [`data.py`](data.py) (de `porra-marcos-gracia-arrondo.pdf`).
-Los resultados/horarios, de [football-data.org](https://www.football-data.org).
-La clasificación se calcula igual que la web oficial
-[NFQ World Cup](https://cesaresteban.github.io/NFQ-WORLD-CUP/) (participantes y porras
-desde su Supabase; 3 puntos por cada 1/X/2 acertado en grupos).
+Todos los datos salen de la web oficial
+[NFQ World Cup](https://cesaresteban.github.io/NFQ-WORLD-CUP/): los participantes y sus
+porras desde su Supabase, y los resultados/horarios desde su misma API de partidos
+(`sports.bzzoiro.com`). Así la clasificación coincide exactamente con la de la web
+(3 puntos por cada 1/X/2 acertado en grupos). No hace falta registrarse en ningún sitio.
 
-> El chat (el "¿quién eres?") funciona en cuanto estén los secrets de Telegram.
-> Los avisos de partidos necesitan además `FOOTBALL_DATA_TOKEN`.
+> Solo necesita el secret `TELEGRAM_TOKEN` para funcionar.
 
 ---
 
-## Puesta en marcha (una sola vez)
+## Puesta en marcha (ya hecha)
 
-### 1. Tu `chat_id`
-Manda cualquier mensaje a **@ResultadosMundial_bot** en Telegram y luego:
+Alojado en **GitHub Actions** (cron cada 5 min), siempre encendido y gratis. Único
+secret necesario: `TELEGRAM_TOKEN` (en *Settings → Secrets and variables → Actions*).
+La **primera** ejecución solo marca los partidos ya jugados como "ya avisados" (no manda
+nada del historial); a partir de ahí avisa de cada partido nuevo a todos los identificados.
 
-```bash
-python get_chat_id.py
-```
-
-Apunta el número que sale.
-
-### 2. Token de football-data.org (gratis)
-Regístrate en https://www.football-data.org/client/register (solo email).
-Copia tu API token del correo / del panel.
-
-### 3a. Opción recomendada — GitHub Actions (siempre encendido, gratis)
-1. Crea un repo en GitHub y sube esta carpeta.
-2. En el repo: **Settings → Secrets and variables → Actions → New repository secret**
-   y crea estos tres secrets:
-   - `TELEGRAM_TOKEN` → `8604008107:AAEi...` (el token del bot)
-   - `TELEGRAM_CHAT_ID` → tu chat_id del paso 1
-   - `FOOTBALL_DATA_TOKEN` → tu token del paso 2
-3. Listo. El workflow [`.github/workflows/mundial.yml`](.github/workflows/mundial.yml)
-   se ejecuta solo cada 5 minutos. La **primera** ejecución solo marca los partidos
-   ya jugados como "ya avisados" (no manda nada del historial); a partir de ahí
-   avisa de cada partido nuevo.
-
-> Lánzalo a mano la primera vez desde la pestaña **Actions → Bot Porra Mundial →
-> Run workflow** para que inicialice el estado.
-
-### 3b. Opción alternativa — en tu PC
-```bash
-cp .env.example .env     # rellena TELEGRAM_CHAT_ID y FOOTBALL_DATA_TOKEN
-pip install -r requirements.txt
-```
-Y prográmalo con el **Programador de tareas de Windows** para que ejecute
-`python bot.py` cada 5 minutos (cargando las variables del `.env`).
-Inconveniente: solo avisa mientras el PC esté encendido.
+Para ejecutarlo en local: `pip install -r requirements.txt` y `TELEGRAM_TOKEN=... python bot.py`.
 
 ---
 
 ## Cómo funciona por dentro
-- `bot.py` es **idempotente**: guarda en `state.json` qué avisos ya mandó, así que
-  ejecutarlo de más nunca duplica mensajes.
-- Solo actúa sobre partidos de **fase de grupos** que estén en tu porra.
+- `bot.py` es **idempotente**: guarda en `state.json` los usuarios y qué avisos ya mandó,
+  así que ejecutarlo de más nunca duplica mensajes.
+- Solo actúa sobre partidos de **fase de grupos**.
 - El "Comienzo" se dispara por la hora de inicio del partido; el "Final", cuando la
-  API marca el partido como terminado (incluido el resultado real).
+  API marca el partido como terminado (con el resultado real).

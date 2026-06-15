@@ -25,14 +25,18 @@ import requests
 
 from data import TEAMS, PORRA
 
-API_URL = "https://api.football-data.org/v4/competitions/WC/matches"
 TG_API = "https://api.telegram.org/bot{token}/{method}"
 SB_URL = "https://zavqpnsbsmivsuvwurkd.supabase.co"
 SB_KEY = "sb_publishable_gzIrT1J8xG5ZGTIxJHFzfg_BAO-XGPm"
+# Misma API de partidos que usa la web de la porra (resultados consistentes con el ranking).
+SPORTS_URL = "https://sports.bzzoiro.com/api/v2/events/?league_id=27&season_id=188&limit=200"
+SPORTS_KEY = os.environ.get("SPORTS_TOKEN", "65282d7cc77d80d27171566864fc427e7a6f1266")
 STATE_FILE = os.environ.get("STATE_FILE", os.path.join(os.path.dirname(__file__), "state.json"))
 
 COMIENZO_MAX_RETRASO_H = 6
 GROUP_LETTERS = "ABCDEFGHIJKL"
+LIVE_ST = {"inprogress", "1h", "ht", "2h", "et", "bt", "p", "break", "live", "penalties"}
+FINISHED_ST = {"finished", "ft", "aet", "ap", "after_extra_time", "after_penalties"}
 
 
 # --------------------------------------------------------------------------- #
@@ -54,15 +58,9 @@ for _code, (_name, _flag, _aliases) in TEAMS.items():
         _ALIAS_INDEX[normalize(_a)] = _code
 
 
-def match_team(api_team):
-    if not api_team:
-        return None
-    for key in ("tla", "name", "shortName"):
-        val = api_team.get(key)
-        code = _ALIAS_INDEX.get(normalize(val)) if val else None
-        if code:
-            return code
-    return None
+def match_team(name):
+    """Devuelve el code interno a partir del nombre de equipo de la API (string)."""
+    return _ALIAS_INDEX.get(normalize(name)) if name else None
 
 
 # Clave de grupo por pareja (igual que la web): frozenset -> (key, home_code, away_code)
@@ -173,15 +171,14 @@ def group_results(matches):
     """Resultados de grupos terminados: clave 'A_0' -> '1'/'x'/'2' (local de la web)."""
     res = {}
     for m in matches:
-        if m.get("stage") != "GROUP_STAGE" or m.get("status") != "FINISHED":
+        if (m.get("status") or "").lower() not in FINISHED_ST:
             continue
-        home, away = match_team(m.get("homeTeam")), match_team(m.get("awayTeam"))
+        home, away = match_team(m.get("home_team")), match_team(m.get("away_team"))
         gk = GROUP_KEYS.get(frozenset((home, away))) if home and away else None
         if not gk:
             continue
         key, hc, _ac = gk
-        ft = (m.get("score") or {}).get("fullTime") or {}
-        gh_api, ga_api = ft.get("home"), ft.get("away")
+        gh_api, ga_api = m.get("home_score"), m.get("away_score")
         if gh_api is None or ga_api is None:
             continue
         gh, ga = (gh_api, ga_api) if home == hc else (ga_api, gh_api)
@@ -367,16 +364,16 @@ def process_chat(token, porras, state):
 # --------------------------------------------------------------------------- #
 # Partidos
 # --------------------------------------------------------------------------- #
-def fetch_matches(fd_token):
-    r = requests.get(API_URL, headers={"X-Auth-Token": fd_token}, timeout=30)
+def fetch_matches():
+    r = requests.get(SPORTS_URL, headers={"Authorization": "Token " + SPORTS_KEY}, timeout=30)
     if r.status_code != 200:
-        print("ERROR football-data ({}): {}".format(r.status_code, r.text), file=sys.stderr)
+        print("ERROR API partidos ({}): {}".format(r.status_code, r.text[:200]), file=sys.stderr)
         sys.exit(1)
-    return r.json().get("matches", [])
+    return r.json().get("results", [])
 
 
-def parse_utc(s):
-    return datetime.strptime(s, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+def parse_dt(s):
+    return datetime.fromisoformat(s) if s else None
 
 
 def confirmed_users(state, porras_by_pid):
@@ -390,7 +387,6 @@ def confirmed_users(state, porras_by_pid):
 
 def main():
     token = os.environ.get("TELEGRAM_TOKEN")
-    fd_token = os.environ.get("FOOTBALL_DATA_TOKEN")
     if not token:
         print("Falta TELEGRAM_TOKEN.", file=sys.stderr)
         sys.exit(2)
@@ -399,35 +395,28 @@ def main():
     porras = fetch_porras()
     porras_by_pid = {p["id"]: p for p in porras}
 
-    # 1) Atender el chat (identificaciones). Funciona sin token de football-data.
+    # 1) Atender el chat (identificaciones).
     process_chat(token, porras, state)
     save_state(state)
 
-    if not fd_token:
-        print("Sin FOOTBALL_DATA_TOKEN: solo atiendo el chat. Usuarios: {}.".format(
-            len(state["users"])))
-        return
-
     # 2) Partidos
     now = datetime.now(timezone.utc)
-    matches = fetch_matches(fd_token)
+    matches = fetch_matches()
     results = group_results(matches)
 
     relevant = []
     for m in matches:
-        if m.get("stage") != "GROUP_STAGE":
-            continue
-        home, away = match_team(m.get("homeTeam")), match_team(m.get("awayTeam"))
+        home, away = match_team(m.get("home_team")), match_team(m.get("away_team"))
         if home and away and frozenset((home, away)) in GROUP_KEYS:
             relevant.append((m, home, away))
 
     # Primera ejecución: marcar lo ya jugado como avisado (sin spamear el historial).
     if not state["seeded"]:
         for m, home, away in relevant:
-            st = m.get("status")
-            if st in ("IN_PLAY", "PAUSED", "FINISHED", "SUSPENDED"):
+            st = (m.get("status") or "").lower()
+            if st in LIVE_ST or st in FINISHED_ST:
                 state["comienzo"].append(m["id"])
-            if st == "FINISHED":
+            if st in FINISHED_ST:
                 state["final"].append(m["id"])
         state["seeded"] = True
         save_state(state)
@@ -442,12 +431,12 @@ def main():
 
     for m, home, away in relevant:
         mid = m["id"]
-        st = m.get("status")
-        kickoff = parse_utc(m["utcDate"]) if m.get("utcDate") else None
-        ya_empezado = st in ("IN_PLAY", "PAUSED", "FINISHED", "SUSPENDED")
+        st = (m.get("status") or "").lower()
+        kickoff = parse_dt(m.get("event_date"))
+        ya_empezado = st in LIVE_ST or st in FINISHED_ST
         toca_comienzo = ya_empezado or (kickoff is not None and now >= kickoff)
         if kickoff is not None and (now - kickoff).total_seconds() > COMIENZO_MAX_RETRASO_H * 3600:
-            demasiado_tarde = st not in ("IN_PLAY", "PAUSED")
+            demasiado_tarde = st not in LIVE_ST
         else:
             demasiado_tarde = False
 
@@ -462,9 +451,8 @@ def main():
             save_state(state)
 
         # ── Final: a cada usuario, resultado + acierto + su clasificación ──
-        if st == "FINISHED" and mid not in final_set:
-            ft = (m.get("score") or {}).get("fullTime") or {}
-            gh, ga = ft.get("home"), ft.get("away")
+        if st in FINISHED_ST and mid not in final_set:
+            gh, ga = m.get("home_score"), m.get("away_score")
             if gh is None or ga is None:
                 continue
             real = home if gh > ga else (away if ga > gh else None)
