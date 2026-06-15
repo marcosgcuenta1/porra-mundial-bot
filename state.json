@@ -29,7 +29,7 @@
     8287
   ],
   "seeded": true,
-  "tg_offset": 118763982,
+  "tg_offset": 118763985,
   "users": {
     "1104050697": {
       "pid": 20,
@@ -86,6 +86,15 @@
       "candidates": []
     },
     "4627678": {
+      "pid": 50,
+      "name": "Alejandro Perez Manrique",
+      "confirmed": true,
+      "muted": false,
+      "asked": true,
+      "stage": "done",
+      "candidates": []
+    },
+    "1528244454": {
       "pid": null,
       "name": null,
       "confirmed": false,
