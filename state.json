@@ -29,7 +29,7 @@
     8287
   ],
   "seeded": true,
-  "tg_offset": 118763999,
+  "tg_offset": 118764004,
   "users": {
     "1104050697": {
       "pid": 20,
@@ -113,12 +113,21 @@
       "candidates": []
     },
     "7602662919": {
-      "pid": null,
-      "name": null,
-      "confirmed": false,
+      "pid": 44,
+      "name": "Carlos Ruiz Zambrana",
+      "confirmed": true,
       "muted": false,
       "asked": true,
-      "stage": "awaiting_name",
+      "stage": "done",
+      "candidates": []
+    },
+    "796066834": {
+      "pid": 27,
+      "name": "Pablo Conderana Medem",
+      "confirmed": true,
+      "muted": false,
+      "asked": true,
+      "stage": "done",
       "candidates": []
     }
   }
