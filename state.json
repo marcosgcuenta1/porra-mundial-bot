@@ -2,13 +2,15 @@
   "comienzo": [],
   "final": [],
   "seeded": false,
-  "tg_offset": 118763858,
+  "tg_offset": 118763860,
   "identity": {
     "confirmed": false,
     "pid": null,
     "name": null,
     "asked": true,
     "stage": "awaiting_name",
-    "candidates": []
+    "candidates": [
+      20
+    ]
   }
 }
