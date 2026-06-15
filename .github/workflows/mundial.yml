@@ -1,23 +1,24 @@
 name: Bot Porra Mundial
 
+# Bot "siempre encendido": cada ejecución escucha el chat en continuo (long-polling)
+# y revisa los partidos. El cron de cada 30 min refresca el proceso (cancela el
+# anterior y arranca uno nuevo), de modo que siempre hay un bot escuchando.
 on:
+  workflow_dispatch: {}
   schedule:
-    # Cada 5 minutos (GitHub puede retrasarlo unos minutos en horas punta).
-    - cron: "*/5 * * * *"
-  workflow_dispatch: {}   # permite lanzarlo a mano desde la pestaña Actions
+    - cron: "*/30 * * * *"
 
-# Necesario para que el job pueda hacer commit del state.json actualizado.
 permissions:
   contents: write
 
-# Evita que dos ejecuciones se solapen y pisen el estado.
 concurrency:
   group: bot-porra
-  cancel-in-progress: false
+  cancel-in-progress: true   # el nuevo releva al anterior
 
 jobs:
   run:
     runs-on: ubuntu-latest
+    timeout-minutes: 55
     steps:
       - uses: actions/checkout@v4
 
@@ -27,22 +28,8 @@ jobs:
 
       - run: pip install -r requirements.txt
 
-      - name: Ejecutar bot
+      - name: Bot en escucha (long-polling)
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: python bot.py
-
-      - name: Guardar estado si cambió
-        run: |
-          if ! git diff --quiet -- state.json; then
-            git config user.name  "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
-            git add state.json
-            git commit -m "Actualizar estado del bot [skip ci]"
-            git push
-          else
-            echo "Sin cambios en el estado."
-          fi
-
-# bot porra mundial 2026
+        run: python bot.py loop

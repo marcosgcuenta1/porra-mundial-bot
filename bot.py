@@ -17,7 +17,9 @@ Variables de entorno:
 import json
 import os
 import re
+import subprocess
 import sys
+import time
 import unicodedata
 from datetime import datetime, timezone
 
@@ -111,6 +113,35 @@ def save_state(st):
         json.dump(st, f, ensure_ascii=False, indent=2)
 
 
+_last_commit = [0.0]
+
+
+def commit_state():
+    """En GitHub Actions, guarda state.json en el repo para que el siguiente relevo lo herede."""
+    try:
+        subprocess.run(["git", "add", "state.json"], check=False)
+        r = subprocess.run(["git", "-c", "user.name=bot",
+                            "-c", "user.email=bot@users.noreply.github.com",
+                            "commit", "-m", "Estado del bot [skip ci]"],
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        if r.returncode == 0:
+            subprocess.run(["git", "push", "origin", "HEAD:master"],
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+    except Exception as e:
+        print("commit_state error:", e, file=sys.stderr)
+
+
+def persist(state, force=False):
+    """Guarda el estado en disco y (en Actions) lo commitea, con un throttle de 30 s."""
+    save_state(state)
+    if os.environ.get("GITHUB_ACTIONS") != "true":
+        return
+    now = time.monotonic()
+    if force or now - _last_commit[0] > 30:
+        commit_state()
+        _last_commit[0] = now
+
+
 def new_user():
     return {"pid": None, "name": None, "confirmed": False,
             "asked": False, "stage": "awaiting_name", "candidates": []}
@@ -135,9 +166,9 @@ def send(token, chat_id, text, reply_markup=None):
     return tg(token, "sendMessage", **payload).get("ok", False)
 
 
-def get_updates(token, offset):
+def get_updates(token, offset, timeout=0):
     r = requests.get(TG_API.format(token=token, method="getUpdates"),
-                     params={"offset": offset, "timeout": 0}, timeout=30)
+                     params={"offset": offset, "timeout": timeout}, timeout=timeout + 25)
     data = r.json()
     return data.get("result", []) if data.get("ok") else []
 
@@ -290,14 +321,14 @@ def ask(token, chat_id, u):
     send(token, chat_id, ASK_TEXT)
 
 
-def process_chat(token, porras, state):
+def process_chat(token, porras, state, updates):
     """Atiende los mensajes entrantes de todos los chats e identifica a cada participante."""
-    if not porras:
-        return  # sin participantes no podemos identificar; reintentamos la próxima vez
+    if not porras or not updates:
+        return
     by_id = {p["id"]: p for p in porras}
     users = state["users"]
 
-    for upd in get_updates(token, state["tg_offset"]):
+    for upd in updates:
         state["tg_offset"] = max(state["tg_offset"], upd["update_id"] + 1)
 
         cq = upd.get("callback_query")
@@ -385,21 +416,9 @@ def confirmed_users(state, porras_by_pid):
     return out
 
 
-def main():
-    token = os.environ.get("TELEGRAM_TOKEN")
-    if not token:
-        print("Falta TELEGRAM_TOKEN.", file=sys.stderr)
-        sys.exit(2)
-
-    state = load_state()
-    porras = fetch_porras()
+def check_matches(token, porras, state):
+    """Mira los partidos y envía comienzos/finales nuevos a todos los identificados."""
     porras_by_pid = {p["id"]: p for p in porras}
-
-    # 1) Atender el chat (identificaciones).
-    process_chat(token, porras, state)
-    save_state(state)
-
-    # 2) Partidos
     now = datetime.now(timezone.utc)
     matches = fetch_matches()
     results = group_results(matches)
@@ -419,10 +438,10 @@ def main():
             if st in FINISHED_ST:
                 state["final"].append(m["id"])
         state["seeded"] = True
-        save_state(state)
+        persist(state, force=True)
         print("Estado inicializado: {} comienzos y {} finales ya marcados.".format(
             len(state["comienzo"]), len(state["final"])))
-        return
+        return 0
 
     comienzo_set = set(state["comienzo"])
     final_set = set(state["final"])
@@ -448,7 +467,7 @@ def main():
                     enviados += 1
             comienzo_set.add(mid)
             state["comienzo"].append(mid)
-            save_state(state)
+            persist(state, force=True)
 
         # ── Final: a cada usuario, resultado + acierto + su clasificación ──
         if st in FINISHED_ST and mid not in final_set:
@@ -463,11 +482,66 @@ def main():
                     enviados += 1
             final_set.add(mid)
             state["final"].append(mid)
-            save_state(state)
+            persist(state, force=True)
 
-    save_state(state)
-    print("Hecho. Usuarios: {}. Mensajes enviados: {}.".format(len(users), enviados))
+    return enviados
+
+
+def main():
+    """Una sola pasada (para pruebas o ejecución manual)."""
+    token = os.environ.get("TELEGRAM_TOKEN")
+    if not token:
+        print("Falta TELEGRAM_TOKEN.", file=sys.stderr)
+        sys.exit(2)
+    state = load_state()
+    porras = fetch_porras()
+    process_chat(token, porras, state, get_updates(token, state["tg_offset"]))
+    enviados = check_matches(token, porras, state)
+    persist(state, force=True)
+    print("Hecho. Usuarios: {}. Mensajes enviados: {}.".format(len(state["users"]), enviados))
+
+
+def run_loop():
+    """Modo 'siempre encendido': escucha el chat en continuo (long-polling) y revisa
+    los partidos cada 2 min. Corre ~5h30 y luego el workflow lanza el relevo."""
+    token = os.environ.get("TELEGRAM_TOKEN")
+    if not token:
+        print("Falta TELEGRAM_TOKEN.", file=sys.stderr)
+        sys.exit(2)
+
+    state = load_state()
+    porras = fetch_porras()
+    porras_ts = time.monotonic()
+    last_match = 0.0
+    start = time.monotonic()
+    MAX_RUN = 50 * 60  # el workflow lo refresca cada 30 min; esto es el tope de seguridad
+    print("Bot escuchando (long-polling). Usuarios: {}.".format(len(state["users"])))
+
+    while time.monotonic() - start < MAX_RUN:
+        try:
+            if not porras or time.monotonic() - porras_ts > 600:
+                p = fetch_porras()
+                if p:
+                    porras, porras_ts = p, time.monotonic()
+
+            updates = get_updates(token, state["tg_offset"], timeout=30)
+            if updates:
+                process_chat(token, porras, state, updates)
+                persist(state)
+
+            if time.monotonic() - last_match > 120:
+                check_matches(token, porras, state)
+                last_match = time.monotonic()
+        except Exception as e:  # un fallo puntual de red no debe tumbar el bucle
+            print("loop error:", e, file=sys.stderr)
+            time.sleep(5)
+
+    persist(state, force=True)
+    print("Fin de ciclo: relevo.")
 
 
 if __name__ == "__main__":
-    main()
+    if len(sys.argv) > 1 and sys.argv[1] == "loop":
+        run_loop()
+    else:
+        main()
