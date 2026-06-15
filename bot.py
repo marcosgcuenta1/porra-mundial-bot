@@ -288,10 +288,11 @@ HELP_CMDS = ("/ayuda", "/help", "/comandos")
 
 AYUDA = ("<b>Comandos</b>\n"
          "/clasificacion — tu posición ahora mismo\n"
-         "/miporra — tus pronósticos especiales (MVP, goleadores…)\n"
-         "/silencio — pausar los avisos de partidos\n"
+         "/clasificacioncompleta — la clasificación entera\n"
+         "/miporra — tus pronósticos y próximos partidos\n"
+         "/silencio — pausar los avisos\n"
          "/avisos — reactivar los avisos\n"
-         "/start — cambiar de identidad\n"
+         "/start — identificarte o cambiar de identidad\n"
          "/ayuda — esta ayuda")
 
 # Lista para el menú de comandos de Telegram (setMyCommands).
@@ -462,8 +463,12 @@ def process_chat(token, porras, state, updates):
         if not text:
             continue
         low = text.lower()
+        cmd = low.split()[0].split("@")[0]
+        # /ayuda funciona siempre, estés identificado o no.
+        if cmd in HELP_CMDS:
+            send(token, cid, AYUDA)
+            continue
         if u.get("confirmed"):
-            cmd = low.split()[0].split("@")[0]
             if cmd in RESET_CMDS:
                 u.update(new_user())
                 ask(token, cid, u)
@@ -479,12 +484,10 @@ def process_chat(token, porras, state, updates):
             elif cmd in UNMUTE_CMDS:
                 u["muted"] = False
                 send(token, cid, "🔔 Avisos reactivados.")
-            elif cmd in HELP_CMDS:
-                send(token, cid, AYUDA)
             elif text.startswith("/"):
                 send(token, cid, "No conozco ese comando.\n\n" + AYUDA)
             continue
-        if low in RESET_CMDS or text.startswith("/") or not u.get("asked"):
+        if cmd in RESET_CMDS or text.startswith("/") or not u.get("asked"):
             ask(token, cid, u)
             continue
         cands = find_candidates(text, porras)
