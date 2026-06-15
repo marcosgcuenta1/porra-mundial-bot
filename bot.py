@@ -143,7 +143,7 @@ def persist(state, force=False):
 
 
 def new_user():
-    return {"pid": None, "name": None, "confirmed": False,
+    return {"pid": None, "name": None, "confirmed": False, "muted": False,
             "asked": False, "stage": "awaiting_name", "candidates": []}
 
 
@@ -180,7 +180,8 @@ def fetch_porras():
     try:
         r = requests.get(
             SB_URL + "/rest/v1/porras",
-            params={"select": "id,nombre,apellidos,active,gr", "order": "created_at.asc"},
+            params={"select": "id,nombre,apellidos,active,gr,mvp,gol1,gol1n,gol2,gol2n,camp,sub,p3,p4",
+                    "order": "created_at.asc"},
             headers={"apikey": SB_KEY, "Authorization": "Bearer " + SB_KEY},
             timeout=30,
         )
@@ -277,6 +278,56 @@ ASK_TEXT = ("\U0001f44b ¡Hola! Soy el bot de la porra del Mundial 2026.\n"
             "<b>¿quién eres?</b>\nEscribe tu nombre y apellidos.")
 
 RESET_CMDS = ("/start", "/reset", "/cambiar", "/quien")
+RANK_CMDS = ("/clasificacion", "/clasi", "/ranking", "/posicion", "/puesto")
+PORRA_CMDS = ("/miporra", "/porra", "/pronosticos")
+MUTE_CMDS = ("/silencio", "/mute", "/pausa")
+UNMUTE_CMDS = ("/avisos", "/activar", "/voz", "/reanudar")
+HELP_CMDS = ("/ayuda", "/help", "/comandos")
+
+AYUDA = ("<b>Comandos</b>\n"
+         "/clasificacion — tu posición ahora mismo\n"
+         "/miporra — tus pronósticos especiales (MVP, goleadores…)\n"
+         "/silencio — pausar los avisos de partidos\n"
+         "/avisos — reactivar los avisos\n"
+         "/start — cambiar de identidad\n"
+         "/ayuda — esta ayuda")
+
+# Lista para el menú de comandos de Telegram (setMyCommands).
+BOT_COMMANDS = [
+    {"command": "clasificacion", "description": "Tu posición en la clasificación"},
+    {"command": "miporra", "description": "Tus pronósticos especiales"},
+    {"command": "silencio", "description": "Pausar los avisos"},
+    {"command": "avisos", "description": "Reactivar los avisos"},
+    {"command": "start", "description": "Identificarte / cambiar de identidad"},
+    {"command": "ayuda", "description": "Ver los comandos"},
+]
+
+
+def cmd_ranking(token, cid, pid, porras):
+    results = group_results(fetch_matches())
+    blk = ranking_block(porras, results, pid)
+    send(token, cid, blk or "Aún no estás en la clasificación (o no hay resultados todavía).")
+
+
+def cmd_miporra(token, cid, p):
+    if not p:
+        send(token, cid, "No encuentro tu porra.")
+        return
+    lines = ["<b>Tu porra</b>"]
+    if p.get("mvp"):
+        lines.append("🏆 MVP: " + p["mvp"])
+    if p.get("gol1"):
+        lines.append("⚽ Goleador del torneo: " + p["gol1"] +
+                     (" ({})".format(p["gol1n"]) if p.get("gol1n") else ""))
+    if p.get("gol2"):
+        lines.append("🇪🇸 Goleador de España: " + p["gol2"] +
+                     (" ({})".format(p["gol2n"]) if p.get("gol2n") else ""))
+    for campo, etq in (("camp", "🥇 Campeón"), ("sub", "🥈 Subcampeón"),
+                       ("p3", "🥉 Tercero"), ("p4", "4º")):
+        if p.get(campo):
+            lines.append("{}: {}".format(etq, p[campo]))
+    lines.append("\nTu pronóstico de cada partido te lo recuerdo al empezar.")
+    send(token, cid, "\n".join(lines))
 
 
 def normalize_words(s):
@@ -361,7 +412,7 @@ def process_chat(token, porras, state, updates):
                     send(token, cid,
                          "✅ Hecho, te he identificado como <b>{}</b>.\n"
                          "Te avisaré al comienzo de cada partido y, al acabar, te pondré "
-                         "tu zona de la clasificación. (Para cambiar: /start.)".format(u["name"]))
+                         "tu zona de la clasificación.\n\nEscribe /ayuda para ver los comandos.".format(u["name"]))
             continue
 
         # ── Mensaje de texto ──
@@ -370,9 +421,24 @@ def process_chat(token, porras, state, updates):
             continue
         low = text.lower()
         if u.get("confirmed"):
-            if low in RESET_CMDS:
+            cmd = low.split()[0].split("@")[0]
+            if cmd in RESET_CMDS:
                 u.update(new_user())
                 ask(token, cid, u)
+            elif cmd in RANK_CMDS:
+                cmd_ranking(token, cid, u["pid"], porras)
+            elif cmd in PORRA_CMDS:
+                cmd_miporra(token, cid, by_id.get(u["pid"]) or {})
+            elif cmd in MUTE_CMDS:
+                u["muted"] = True
+                send(token, cid, "🔕 Avisos en pausa. Reactívalos con /avisos.")
+            elif cmd in UNMUTE_CMDS:
+                u["muted"] = False
+                send(token, cid, "🔔 Avisos reactivados.")
+            elif cmd in HELP_CMDS:
+                send(token, cid, AYUDA)
+            elif text.startswith("/"):
+                send(token, cid, "No conozco ese comando.\n\n" + AYUDA)
             continue
         if low in RESET_CMDS or text.startswith("/") or not u.get("asked"):
             ask(token, cid, u)
@@ -409,7 +475,7 @@ def confirmed_users(state, porras_by_pid):
     """[(chat_id, user)] de los usuarios identificados con porra conocida."""
     out = []
     for cid, u in state["users"].items():
-        if u.get("confirmed") and u.get("pid") in porras_by_pid:
+        if u.get("confirmed") and not u.get("muted") and u.get("pid") in porras_by_pid:
             out.append((cid, u))
     return out
 
