@@ -310,7 +310,7 @@ def find_candidates(text, porras):
 def confirm_keyboard(candidates):
     rows = [[{"text": display_name(p.get("nombre"), p.get("apellidos")),
               "callback_data": "id:{}".format(p["id"])}] for p in candidates]
-    rows.append([{"text": "Otro (no soy ninguno)", "callback_data": "otro"}])
+    rows.append([{"text": "Otro", "callback_data": "otro"}])
     return {"inline_keyboard": rows}
 
 
@@ -386,9 +386,7 @@ def process_chat(token, porras, state, updates):
         else:
             u["stage"] = "awaiting_confirm"
             u["candidates"] = [p["id"] for p in cands]
-            txt = ("¿Confirmas que eres <b>{}</b>?".format(
-                       display_name(cands[0].get("nombre"), cands[0].get("apellidos")))
-                   if len(cands) == 1 else "He encontrado varios. ¿Cuál eres?")
+            txt = "¿Confirmas que eres:?" if len(cands) == 1 else "He encontrado varios. ¿Cuál eres?"
             send(token, cid, txt, reply_markup=confirm_keyboard(cands))
 
 
