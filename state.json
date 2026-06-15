@@ -28,7 +28,7 @@
     8287
   ],
   "seeded": true,
-  "tg_offset": 118763955,
+  "tg_offset": 118763961,
   "users": {
     "1104050697": {
       "pid": 20,
@@ -40,12 +40,12 @@
       "muted": false
     },
     "1952408877": {
-      "pid": null,
-      "name": null,
-      "confirmed": false,
+      "pid": 53,
+      "name": "Emilio Pareja Flores",
+      "confirmed": true,
       "muted": false,
       "asked": true,
-      "stage": "awaiting_name",
+      "stage": "done",
       "candidates": []
     }
   }
