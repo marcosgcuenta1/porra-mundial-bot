@@ -1,12 +1,15 @@
 # Bot Porra Mundial 2026 — ResultadosMundial_bot
 
-Bot de Telegram que, durante la fase de grupos del Mundial 2026:
+Bot de Telegram **multi-usuario**: cualquier participante de la porra puede usarlo.
+Durante la fase de grupos del Mundial 2026, a cada uno le manda:
 
-- **Al comienzo de cada partido** te manda tu pronóstico de la porra, con los equipos
-  en código FIFA de 3 letras y tu ganador en **negrita** (empate: nadie en negrita).
-- **Al terminar** te manda el resultado (✅ si acertaste, ❌ si no) y tu zona de la
-  clasificación.
-- La primera vez te pregunta **¿quién eres?** para saber qué fila resaltar en el ranking.
+- **Al comienzo de cada partido**, SU pronóstico (equipos en código FIFA de 3 letras,
+  su ganador en **negrita**; empate: nadie en negrita).
+- **Al terminar**, el resultado (✅ si acertó, ❌ si no) y SU zona de la clasificación.
+
+**Cómo se apunta un participante:** abre **@ResultadosMundial_bot**, pulsa *Start*,
+escribe su nombre, y confirma con el botón. A partir de ahí recibe los avisos de los
+siguientes partidos (no el historial). Para cambiar de identidad: `/start`.
 
 Ejemplo:
 
