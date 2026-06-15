@@ -277,10 +277,22 @@ def confirm_keyboard(candidates):
 def process_identity(token, chat_id, porras, state):
     ident = state["identity"]
     if ident.get("confirmed"):
-        # Ya identificado: vaciamos updates pendientes para no acumular.
+        # Ya identificado: vaciamos updates pendientes. Si manda /start o /reset,
+        # reiniciamos la identificación.
         updates = get_updates(token, state["tg_offset"])
-        if updates:
-            state["tg_offset"] = max(u["update_id"] for u in updates) + 1
+        restart = False
+        for upd in updates:
+            state["tg_offset"] = max(state["tg_offset"], upd["update_id"] + 1)
+            msg = upd.get("message")
+            if msg and (msg.get("from") or {}).get("id") == int(chat_id):
+                t = (msg.get("text") or "").strip().lower()
+                if t in ("/start", "/reset", "/cambiar", "/quien"):
+                    restart = True
+        if restart:
+            ident.update(confirmed=False, pid=None, name=None, asked=True,
+                         stage="awaiting_name", candidates=[])
+            send_telegram(token, chat_id, ASK_TEXT)
+            return None
         return ident["pid"]
 
     if not porras:
