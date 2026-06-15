@@ -21,7 +21,7 @@ import subprocess
 import sys
 import time
 import unicodedata
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import requests
 
@@ -39,6 +39,7 @@ COMIENZO_MAX_RETRASO_H = 6
 GROUP_LETTERS = "ABCDEFGHIJKL"
 LIVE_ST = {"inprogress", "1h", "ht", "2h", "et", "bt", "p", "break", "live", "penalties"}
 FINISHED_ST = {"finished", "ft", "aet", "ap", "after_extra_time", "after_penalties"}
+ESP_TZ = timezone(timedelta(hours=2))  # España en verano (CEST), todo el Mundial
 
 
 # --------------------------------------------------------------------------- #
@@ -279,6 +280,7 @@ ASK_TEXT = ("\U0001f44b ¡Hola! Soy el bot de la porra del Mundial 2026.\n"
 
 RESET_CMDS = ("/start", "/reset", "/cambiar", "/quien")
 RANK_CMDS = ("/clasificacion", "/clasi", "/ranking", "/posicion", "/puesto")
+FULLRANK_CMDS = ("/clasificacioncompleta", "/completa", "/todos")
 PORRA_CMDS = ("/miporra", "/porra", "/pronosticos")
 MUTE_CMDS = ("/silencio", "/mute", "/pausa")
 UNMUTE_CMDS = ("/avisos", "/activar", "/voz", "/reanudar")
@@ -306,7 +308,21 @@ BOT_COMMANDS = [
 def cmd_ranking(token, cid, pid, porras):
     results = group_results(fetch_matches())
     blk = ranking_block(porras, results, pid)
+    if blk:
+        blk += "\n\nVer entera: /clasificacioncompleta"
     send(token, cid, blk or "Aún no estás en la clasificación (o no hay resultados todavía).")
+
+
+def cmd_ranking_full(token, cid, pid, porras):
+    rk = ranking(porras, group_results(fetch_matches()))
+    if not rk:
+        send(token, cid, "Aún no hay clasificación.")
+        return
+    lines = ["<b>Clasificación completa</b>"]
+    for i, (p_id, name, pts) in enumerate(rk, 1):
+        line = "{}º {} — {} pts".format(i, name, pts)
+        lines.append("<b>{}</b>".format(line) if p_id == pid else line)
+    send(token, cid, "\n".join(lines))
 
 
 def cmd_miporra(token, cid, p):
@@ -326,8 +342,33 @@ def cmd_miporra(token, cid, p):
                        ("p3", "🥉 Tercero"), ("p4", "4º")):
         if p.get(campo):
             lines.append("{}: {}".format(etq, p[campo]))
-    lines.append("\nTu pronóstico de cada partido te lo recuerdo al empezar.")
+
+    nxt = next_matches(3)
+    if nxt:
+        gr = p.get("gr") or {}
+        lines.append("\n📅 <b>Próximos partidos</b> (tu pronóstico):")
+        for k, h, a in nxt:
+            pick = user_pick(gr, h, a)
+            when = k.astimezone(ESP_TZ).strftime("%d/%m %H:%M")
+            lines.append("{} · {} {} - {} {} → <b>{}</b>".format(
+                when, TEAMS[h][1], h, a, TEAMS[a][1], pick or "empate"))
     send(token, cid, "\n".join(lines))
+
+
+def next_matches(n=3):
+    """Los n próximos partidos de grupos sin empezar, ordenados por hora."""
+    up = []
+    for m in fetch_matches():
+        h, a = match_team(m.get("home_team")), match_team(m.get("away_team"))
+        if not (h and a and frozenset((h, a)) in GROUP_KEYS):
+            continue
+        st = (m.get("status") or "").lower()
+        k = parse_dt(m.get("event_date"))
+        if st in LIVE_ST or st in FINISHED_ST or k is None:
+            continue
+        up.append((k, h, a))
+    up.sort(key=lambda x: x[0])
+    return up[:n]
 
 
 def normalize_words(s):
@@ -427,6 +468,8 @@ def process_chat(token, porras, state, updates):
                 ask(token, cid, u)
             elif cmd in RANK_CMDS:
                 cmd_ranking(token, cid, u["pid"], porras)
+            elif cmd in FULLRANK_CMDS:
+                cmd_ranking_full(token, cid, u["pid"], porras)
             elif cmd in PORRA_CMDS:
                 cmd_miporra(token, cid, by_id.get(u["pid"]) or {})
             elif cmd in MUTE_CMDS:
