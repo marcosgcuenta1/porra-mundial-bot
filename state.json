@@ -29,7 +29,7 @@
     8287
   ],
   "seeded": true,
-  "tg_offset": 118764007,
+  "tg_offset": 118764010,
   "users": {
     "1104050697": {
       "pid": 20,
@@ -131,12 +131,12 @@
       "candidates": []
     },
     "1941988587": {
-      "pid": null,
-      "name": null,
-      "confirmed": false,
+      "pid": 72,
+      "name": "Raul Diaz",
+      "confirmed": true,
       "muted": false,
       "asked": true,
-      "stage": "awaiting_name",
+      "stage": "done",
       "candidates": []
     }
   }
