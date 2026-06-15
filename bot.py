@@ -250,7 +250,7 @@ def ranking_block(porras, results, my_pid):
     start = max(0, idx - 2)
     end = min(n, start + 5)
     start = max(0, end - 5)
-    lines = ["<b>Clasificación actual</b>"]
+    lines = ["<b>CLASIFICACIÓN ACTUAL</b>", "━━━━━━━━━━━━━━━━━━━━"]
     for i in range(start, end):
         pid, name, pts = rk[i]
         lines.append(rank_line(i, name, pts, pid == my_pid))
