@@ -2,15 +2,13 @@
   "comienzo": [],
   "final": [],
   "seeded": false,
-  "tg_offset": 118763860,
+  "tg_offset": 118763863,
   "identity": {
-    "confirmed": false,
-    "pid": null,
-    "name": null,
+    "confirmed": true,
+    "pid": 20,
+    "name": "Marcos Gracia Arrondo",
     "asked": true,
-    "stage": "awaiting_name",
-    "candidates": [
-      20
-    ]
+    "stage": "done",
+    "candidates": []
   }
 }
