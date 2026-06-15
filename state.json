@@ -29,7 +29,7 @@
     8287
   ],
   "seeded": true,
-  "tg_offset": 118763985,
+  "tg_offset": 118763990,
   "users": {
     "1104050697": {
       "pid": 20,
@@ -95,12 +95,12 @@
       "candidates": []
     },
     "1528244454": {
-      "pid": null,
-      "name": null,
-      "confirmed": false,
+      "pid": 67,
+      "name": "Ivan Gomez Peral",
+      "confirmed": true,
       "muted": false,
       "asked": true,
-      "stage": "awaiting_name",
+      "stage": "done",
       "candidates": []
     }
   }
