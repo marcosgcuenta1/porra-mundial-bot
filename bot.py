@@ -297,7 +297,8 @@ AYUDA = ("<b>Comandos</b>\n"
 # Lista para el menú de comandos de Telegram (setMyCommands).
 BOT_COMMANDS = [
     {"command": "clasificacion", "description": "Tu posición en la clasificación"},
-    {"command": "miporra", "description": "Tus pronósticos especiales"},
+    {"command": "clasificacioncompleta", "description": "La clasificación entera (46)"},
+    {"command": "miporra", "description": "Tus pronósticos y próximos partidos"},
     {"command": "silencio", "description": "Pausar los avisos"},
     {"command": "avisos", "description": "Reactivar los avisos"},
     {"command": "start", "description": "Identificarte / cambiar de identidad"},
