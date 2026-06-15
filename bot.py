@@ -461,7 +461,7 @@ def process_chat(token, porras, state, updates):
                     send(token, cid,
                          "✅ Hecho, te he identificado como <b>{}</b>.\n"
                          "Te avisaré al comienzo de cada partido y, al acabar, te pondré "
-                         "tu zona de la clasificación.\n\nEscribe /ayuda para ver los comandos.".format(u["name"]))
+                         "tu zona de la clasificación.\n\nClick en /ayuda para ver los comandos.".format(u["name"]))
             continue
 
         # ── Mensaje de texto ──
