@@ -145,7 +145,8 @@ def persist(state, force=False):
 
 def new_user():
     return {"pid": None, "name": None, "confirmed": False, "muted": False,
-            "asked": False, "stage": "awaiting_name", "candidates": []}
+            "asked": False, "stage": "awaiting_name", "candidates": [],
+            "awaiting_compare": False}
 
 
 # --------------------------------------------------------------------------- #
@@ -227,7 +228,8 @@ def ranking(porras, results):
         gr = p.get("gr") or {}
         pts = 3 * sum(1 for k, real in results.items() if gr.get(k) == real)
         rows.append([p["id"], display_name(p.get("nombre"), p.get("apellidos")), pts])
-    rows.sort(key=lambda x: -x[2])
+    # Cláusula de la porra: Iván Gómez Peral queda por delante en caso de empate a puntos.
+    rows.sort(key=lambda x: (-x[2], 0 if normalize(x[1]) == "ivangomezperal" else 1))
     return rows
 
 
@@ -292,11 +294,13 @@ PORRA_CMDS = ("/miporra", "/porra", "/pronosticos")
 MUTE_CMDS = ("/silencio", "/mute", "/pausa")
 UNMUTE_CMDS = ("/avisos", "/activar", "/voz", "/reanudar")
 HELP_CMDS = ("/ayuda", "/help", "/comandos")
+COMPARE_CMDS = ("/compararprediccion", "/comparar", "/comparacion", "/compara")
 
 AYUDA = ("<b>Comandos</b>\n"
          "/clasificacion — tu posición ahora mismo\n"
          "/clasificacioncompleta — la clasificación entera\n"
          "/miporra — tus pronósticos y próximos partidos\n"
+         "/compararprediccion — comparar tus pronósticos con otro\n"
          "/silencio — pausar los avisos\n"
          "/avisos — reactivar los avisos\n"
          "/start — identificarte o cambiar de identidad\n"
@@ -307,6 +311,7 @@ BOT_COMMANDS = [
     {"command": "clasificacion", "description": "Tu posición en la clasificación"},
     {"command": "clasificacioncompleta", "description": "La clasificación entera (46)"},
     {"command": "miporra", "description": "Tus pronósticos y próximos partidos"},
+    {"command": "compararprediccion", "description": "Comparar tus pronósticos con otro"},
     {"command": "silencio", "description": "Pausar los avisos"},
     {"command": "avisos", "description": "Reactivar los avisos"},
     {"command": "start", "description": "Identificarte / cambiar de identidad"},
@@ -379,6 +384,47 @@ def next_matches(n=3):
     return up[:n]
 
 
+def compare_keyboard(candidates):
+    rows = [[{"text": display_name(p.get("nombre"), p.get("apellidos")),
+              "callback_data": "cmp:{}".format(p["id"])}] for p in candidates]
+    return {"inline_keyboard": rows}
+
+
+def do_compare(token, cid, my_pid, text, porras, user):
+    """Resuelve el nombre escrito y muestra (o pide elegir) con quién comparar."""
+    cands = [p for p in find_candidates(text, porras) if p["id"] != my_pid]
+    if not cands:
+        user["awaiting_compare"] = True
+        send(token, cid, "No encuentro a nadie con ese nombre 🤔. Escríbelo otra vez "
+                         "(nombre y apellidos).")
+    elif len(cands) > 4:
+        user["awaiting_compare"] = True
+        send(token, cid, "Hay varios con ese nombre. Añade el apellido, por favor.")
+    elif len(cands) == 1:
+        do_compare_pid(token, cid, my_pid, cands[0]["id"], porras)
+    else:
+        send(token, cid, "¿Con cuál quieres comparar?", reply_markup=compare_keyboard(cands))
+
+
+def do_compare_pid(token, cid, my_pid, other_pid, porras):
+    by_id = {p["id"]: p for p in porras}
+    me, other = by_id.get(my_pid), by_id.get(other_pid)
+    if not me or not other:
+        send(token, cid, "No he podido cargar esa porra.")
+        return
+    other_name = display_name(other.get("nombre"), other.get("apellidos"))
+    my_gr, their_gr = me.get("gr") or {}, other.get("gr") or {}
+    lines = ["<b>TU PREDICCIÓN vs {}</b>".format(other_name.upper()),
+             "━━━━━━━━━━━━━━━━━━━━"]
+    for k, h, a in next_matches(10):
+        mp = user_pick(my_gr, h, a) or "X"
+        tp = user_pick(their_gr, h, a) or "X"
+        row = "{} {}-{} {} → {} / {}".format(TEAMS[h][1], h, a, TEAMS[a][1], mp, tp)
+        lines.append("<b>{}</b>".format(row) if mp != tp else row)
+    lines.append("\n<i>tú / {}  ·  en negrita, donde discrepáis</i>".format(other_name))
+    send(token, cid, "\n".join(lines))
+
+
 def normalize_words(s):
     return [normalize(w) for w in (s or "").split() if normalize(w)]
 
@@ -447,9 +493,13 @@ def process_chat(token, porras, state, updates):
         # ── Pulsación de botón ──
         if cq:
             tg(token, "answerCallbackQuery", callback_query_id=cq["id"])
+            data = cq.get("data", "")
+            if data.startswith("cmp:"):
+                if u.get("confirmed"):
+                    do_compare_pid(token, cid, u["pid"], int(data[4:]), porras)
+                continue
             if u.get("confirmed") or u.get("stage") != "awaiting_confirm":
                 continue
-            data = cq.get("data", "")
             if data == "otro":
                 u["stage"] = "awaiting_name"
                 send(token, cid, "Vale. Escribe otra vez tu nombre (nombre y apellidos).")
@@ -475,9 +525,17 @@ def process_chat(token, porras, state, updates):
             send(token, cid, AYUDA)
             continue
         if u.get("confirmed"):
+            if u.get("awaiting_compare") and not text.startswith("/"):
+                u["awaiting_compare"] = False
+                do_compare(token, cid, u["pid"], text, porras, u)
+                continue
+            u["awaiting_compare"] = False  # cualquier comando cancela el modo comparar
             if cmd in RESET_CMDS:
                 u.update(new_user())
                 ask(token, cid, u)
+            elif cmd in COMPARE_CMDS:
+                u["awaiting_compare"] = True
+                send(token, cid, "¿Con quién quieres comparar? Escríbeme su nombre.")
             elif cmd in RANK_CMDS:
                 cmd_ranking(token, cid, u["pid"], porras)
             elif cmd in FULLRANK_CMDS:
