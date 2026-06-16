@@ -16,7 +16,8 @@
     8300,
     8301,
     8302,
-    8304
+    8304,
+    8305
   ],
   "final": [
     8298,
@@ -38,7 +39,7 @@
     8304
   ],
   "seeded": true,
-  "tg_offset": 118764143,
+  "tg_offset": 118764144,
   "users": {
     "1104050697": {
       "pid": 20,
@@ -134,7 +135,7 @@
       "asked": true,
       "stage": "done",
       "candidates": [],
-      "awaiting_compare": true
+      "awaiting_compare": false
     },
     "796066834": {
       "pid": 27,
