@@ -36,7 +36,7 @@
     8302
   ],
   "seeded": true,
-  "tg_offset": 118764031,
+  "tg_offset": 118764035,
   "users": {
     "1104050697": {
       "pid": 20,
@@ -174,16 +174,13 @@
       "candidates": []
     },
     "1087333488": {
-      "pid": null,
-      "name": null,
-      "confirmed": false,
+      "pid": 32,
+      "name": "Ignacio Valencia Calatayud",
+      "confirmed": true,
       "muted": false,
       "asked": true,
-      "stage": "awaiting_confirm",
-      "candidates": [
-        32,
-        71
-      ]
+      "stage": "done",
+      "candidates": []
     }
   }
 }
