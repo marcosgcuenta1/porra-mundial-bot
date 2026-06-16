@@ -256,7 +256,7 @@ def ranking_block(porras, results, my_pid):
     for i in range(start, end):
         pid, name, pts = rk[i]
         lines.append(rank_line(i, name, pts, pid == my_pid))
-    return "\n".join(lines)
+    return "\n".join(lines) + "\n\nVer entera: /clasificacioncompleta"
 
 
 # --------------------------------------------------------------------------- #
@@ -322,8 +322,6 @@ BOT_COMMANDS = [
 def cmd_ranking(token, cid, pid, porras):
     results = group_results(fetch_matches())
     blk = ranking_block(porras, results, pid)
-    if blk:
-        blk += "\n\nVer entera: /clasificacioncompleta"
     send(token, cid, blk or "Aún no estás en la clasificación (o no hay resultados todavía).")
 
 
