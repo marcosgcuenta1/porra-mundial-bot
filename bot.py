@@ -416,12 +416,14 @@ def do_compare_pid(token, cid, my_pid, other_pid, porras):
     my_gr, their_gr = me.get("gr") or {}, other.get("gr") or {}
     lines = ["<b>TU PREDICCIÓN vs {}</b>".format(other_name.upper()),
              "━━━━━━━━━━━━━━━━━━━━"]
+    rows = []
     for k, h, a in next_matches(10):
         mp = user_pick(my_gr, h, a) or "X"
         tp = user_pick(their_gr, h, a) or "X"
-        row = "{} {}-{} {} → {} / {}".format(TEAMS[h][1], h, a, TEAMS[a][1], mp, tp)
-        lines.append("<b>{}</b>".format(row) if mp != tp else row)
-    lines.append("\n<i>tú / {}  ·  en negrita, donde discrepáis</i>".format(other_name))
+        marca = " *" if mp != tp else ""
+        rows.append("{}-{} → {:<3} / {:<3}{}".format(h, a, mp, tp, marca))
+    lines.append("<pre>" + "\n".join(rows) + "</pre>")
+    lines.append("\n<i>tú / {}  ·  * donde discrepáis</i>".format(other_name))
     send(token, cid, "\n".join(lines))
 
 
