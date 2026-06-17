@@ -44,7 +44,7 @@
     8303
   ],
   "seeded": true,
-  "tg_offset": 118764175,
+  "tg_offset": 118764177,
   "users": {
     "1104050697": {
       "pid": 20,
@@ -151,7 +151,7 @@
       "asked": true,
       "stage": "done",
       "candidates": [],
-      "awaiting_compare": true
+      "awaiting_compare": false
     },
     "1941988587": {
       "pid": 72,
