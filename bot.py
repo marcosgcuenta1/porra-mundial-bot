@@ -321,7 +321,7 @@ def msg_final(home, away, winner, gh, ga, acierto, ranking_txt="", pct=None):
         emoji, fh, team_label(home, winner), gh, ga, team_label(away, winner), fa)
     if pct is not None:
         base += "\nHa acertado el {}% de personas".format(pct)
-    return base + ("\n━━━━━━━━━━━━━━━━\n" + ranking_txt if ranking_txt else "")
+    return base + ("\n\n━━━━━━━━━━━━━━━━\n\n" + ranking_txt if ranking_txt else "")
 
 
 # --------------------------------------------------------------------------- #
