@@ -285,7 +285,7 @@ def ranking_block(porras, results, my_pid):
     start = max(0, idx - 2)
     end = min(n, start + 5)
     start = max(0, end - 5)
-    lines = ["━━━━━━━━━━━━", "<b>CLASIFICACIÓN ACTUAL</b>"]
+    lines = ["━━━━━━━━━━━━━━━━", "<b>CLASIFICACIÓN ACTUAL</b>"]
     for i in range(start, end):
         pid, name, pts = rk[i]
         lines.append(rank_line(i, name, pts, pid == my_pid))
@@ -384,7 +384,7 @@ def cmd_ranking_full(token, cid, pid, porras):
     if not rk:
         send(token, cid, "Aún no hay clasificación.")
         return
-    lines = ["<b>CLASIFICACIÓN COMPLETA</b>", "━━━━━━━━━━━━"]
+    lines = ["<b>CLASIFICACIÓN COMPLETA</b>", "━━━━━━━━━━━━━━━━"]
     for i, (p_id, name, pts) in enumerate(rk):
         lines.append(rank_line(i, name, pts, p_id == pid))
     send(token, cid, "\n".join(lines))
@@ -467,7 +467,7 @@ def do_compare_pid(token, cid, my_pid, other_pid, porras):
     other_name = display_name(other.get("nombre"), other.get("apellidos"))
     my_gr, their_gr = me.get("gr") or {}, other.get("gr") or {}
     lines = ["<b>TU PREDICCIÓN vs {}</b>".format(other_name.upper()),
-             "━━━━━━━━━━━━"]
+             "━━━━━━━━━━━━━━━━"]
     for k, h, a in next_matches(10):
         mp = user_pick(my_gr, h, a) or "X"
         tp = user_pick(their_gr, h, a) or "X"
@@ -537,7 +537,7 @@ def cmd_usuarios(token, cid, state):
     activos = sum(1 for u in us if _esp(u.get("last_active")) == hoy)
     lines = ["<b>👥 USUARIOS ({})</b>".format(len(us)),
              "Mensajes: {} · activos hoy: {}".format(total, activos),
-             "━━━━━━━━━━━━"]
+             "━━━━━━━━━━━━━━━━"]
     for u in sorted(us, key=lambda x: -x.get("msgs", 0)):
         lines.append("{} · alta {} · {} msg · últ {}".format(
             u.get("name"), _esp(u.get("first_seen")), u.get("msgs", 0),
@@ -547,7 +547,7 @@ def cmd_usuarios(token, cid, state):
         for k, v in (u.get("cmds") or {}).items():
             agg[k] = agg.get(k, 0) + v
     if agg:
-        lines.append("━━━━━━━━━━━━")
+        lines.append("━━━━━━━━━━━━━━━━")
         lines.append("Comandos: " + " · ".join(
             "/{} {}".format(k, v) for k, v in sorted(agg.items(), key=lambda x: -x[1])))
     send(token, cid, "\n".join(lines))
