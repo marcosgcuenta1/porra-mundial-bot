@@ -34,6 +34,9 @@ SB_KEY = "sb_publishable_gzIrT1J8xG5ZGTIxJHFzfg_BAO-XGPm"
 SPORTS_URL = "https://sports.bzzoiro.com/api/v2/events/?league_id=27&season_id=188&limit=200"
 SPORTS_KEY = os.environ.get("SPORTS_TOKEN", "65282d7cc77d80d27171566864fc427e7a6f1266")
 STATE_FILE = os.environ.get("STATE_FILE", os.path.join(os.path.dirname(__file__), "state.json"))
+ADMIN_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "1104050697")  # solo el admin ve /usuarios
+ENC_FILE = os.path.join(os.path.dirname(STATE_FILE), "state.enc")
+STATE_KEY = os.environ.get("BOT_STATE_KEY")  # si está, el estado se guarda CIFRADO (privado)
 
 COMIENZO_MAX_RETRASO_H = 6
 GROUP_LETTERS = "ABCDEFGHIJKL"
@@ -86,11 +89,30 @@ def user_pick(gr, code_a, code_b):
 # --------------------------------------------------------------------------- #
 # Estado (multi-usuario)
 # --------------------------------------------------------------------------- #
-def load_state():
-    try:
+def _fernet():
+    from cryptography.fernet import Fernet
+    return Fernet(STATE_KEY.encode())
+
+
+def _read_raw():
+    """Lee el estado: cifrado (state.enc) si hay clave, si no texto plano (state.json)."""
+    if STATE_KEY and os.path.exists(ENC_FILE):
+        try:
+            with open(ENC_FILE, "rb") as f:
+                return _fernet().decrypt(f.read()).decode("utf-8")
+        except Exception as e:
+            print("decrypt error:", e, file=sys.stderr)
+    if os.path.exists(STATE_FILE):
         with open(STATE_FILE, "r", encoding="utf-8") as f:
-            st = json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
+            return f.read()
+    return None
+
+
+def load_state():
+    raw = _read_raw()
+    try:
+        st = json.loads(raw) if raw else {}
+    except json.JSONDecodeError:
         st = {}
     st.setdefault("comienzo", [])
     st.setdefault("final", [])
@@ -110,17 +132,23 @@ def load_state():
 
 
 def save_state(st):
-    with open(STATE_FILE, "w", encoding="utf-8") as f:
-        json.dump(st, f, ensure_ascii=False, indent=2)
+    data = json.dumps(st, ensure_ascii=False, indent=2)
+    if STATE_KEY:  # cifrado -> state.enc (privado)
+        with open(ENC_FILE, "wb") as f:
+            f.write(_fernet().encrypt(data.encode("utf-8")))
+    else:          # local / sin clave -> texto plano
+        with open(STATE_FILE, "w", encoding="utf-8") as f:
+            f.write(data)
 
 
 _last_commit = [0.0]
 
 
 def commit_state():
-    """En GitHub Actions, guarda state.json en el repo para que el siguiente relevo lo herede."""
+    """En GitHub Actions, guarda el estado (cifrado) en el repo para el siguiente relevo."""
+    target = "state.enc" if STATE_KEY else "state.json"
     try:
-        subprocess.run(["git", "add", "state.json"], check=False)
+        subprocess.run(["git", "add", target], check=False)
         r = subprocess.run(["git", "-c", "user.name=bot",
                             "-c", "user.email=bot@users.noreply.github.com",
                             "commit", "-m", "Estado del bot [skip ci]"],
@@ -146,7 +174,12 @@ def persist(state, force=False):
 def new_user():
     return {"pid": None, "name": None, "confirmed": False, "muted": False,
             "asked": False, "stage": "awaiting_name", "candidates": [],
-            "awaiting_compare": False}
+            "awaiting_compare": False,
+            "msgs": 0, "first_seen": None, "last_active": None, "cmds": {}}
+
+
+def now_iso():
+    return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
 # --------------------------------------------------------------------------- #
@@ -295,6 +328,16 @@ MUTE_CMDS = ("/silencio", "/mute", "/pausa")
 UNMUTE_CMDS = ("/avisos", "/activar", "/voz", "/reanudar")
 HELP_CMDS = ("/ayuda", "/help", "/comandos")
 COMPARE_CMDS = ("/compararprediccion", "/comparar", "/comparacion", "/compara")
+ADMIN_CMDS = ("/usuarios", "/uso", "/stats")  # oculto: solo el admin
+
+# Etiqueta canónica de cada comando, para el contador de uso.
+CMD_LABEL = {}
+for _grp, _lbl in [(RESET_CMDS, "start"), (RANK_CMDS, "clasificacion"),
+                   (FULLRANK_CMDS, "clasificacioncompleta"), (PORRA_CMDS, "miporra"),
+                   (COMPARE_CMDS, "comparar"), (MUTE_CMDS, "silencio"),
+                   (UNMUTE_CMDS, "avisos"), (HELP_CMDS, "ayuda"), (ADMIN_CMDS, "usuarios")]:
+    for _c in _grp:
+        CMD_LABEL[_c] = _lbl
 
 AYUDA = ("<b>Comandos</b>\n"
          "/clasificacion — tu posición ahora mismo\n"
@@ -465,6 +508,53 @@ def ask(token, chat_id, u):
     send(token, chat_id, ASK_TEXT)
 
 
+def _esp(iso, with_time=False):
+    if not iso:
+        return "—"
+    try:
+        d = datetime.fromisoformat(iso).astimezone(ESP_TZ)
+    except Exception:
+        return "—"
+    return d.strftime("%d/%m %H:%M") if with_time else d.strftime("%d/%m")
+
+
+def cmd_usuarios(token, cid, state):
+    """Resumen de uso (solo admin): quién, cuánta actividad y qué comandos usan."""
+    us = [u for u in state["users"].values() if u.get("confirmed")]
+    total = sum(u.get("msgs", 0) for u in us)
+    hoy = datetime.now(ESP_TZ).strftime("%d/%m")
+    activos = sum(1 for u in us if _esp(u.get("last_active")) == hoy)
+    lines = ["<b>👥 USUARIOS ({})</b>".format(len(us)),
+             "Mensajes: {} · activos hoy: {}".format(total, activos),
+             "━━━━━━━━━━━━━━━━━━━━"]
+    for u in sorted(us, key=lambda x: -x.get("msgs", 0)):
+        lines.append("{} · alta {} · {} msg · últ {}".format(
+            u.get("name"), _esp(u.get("first_seen")), u.get("msgs", 0),
+            _esp(u.get("last_active"), True)))
+    agg = {}
+    for u in us:
+        for k, v in (u.get("cmds") or {}).items():
+            agg[k] = agg.get(k, 0) + v
+    if agg:
+        lines.append("━━━━━━━━━━━━━━━━━━━━")
+        lines.append("Comandos: " + " · ".join(
+            "/{} {}".format(k, v) for k, v in sorted(agg.items(), key=lambda x: -x[1])))
+    send(token, cid, "\n".join(lines))
+
+
+def track(u, cmd):
+    """Apunta actividad de uso del usuario."""
+    u["msgs"] = u.get("msgs", 0) + 1
+    ts = now_iso()
+    if not u.get("first_seen"):
+        u["first_seen"] = ts
+    u["last_active"] = ts
+    lbl = CMD_LABEL.get(cmd)
+    if lbl:
+        c = u.setdefault("cmds", {})
+        c[lbl] = c.get(lbl, 0) + 1
+
+
 def process_chat(token, porras, state, updates):
     """Atiende los mensajes entrantes de todos los chats e identifica a cada participante."""
     if not porras or not updates:
@@ -491,6 +581,7 @@ def process_chat(token, porras, state, updates):
         # ── Pulsación de botón ──
         if cq:
             tg(token, "answerCallbackQuery", callback_query_id=cq["id"])
+            track(u, "")
             data = cq.get("data", "")
             if data.startswith("cmp:"):
                 if u.get("confirmed"):
@@ -518,6 +609,11 @@ def process_chat(token, porras, state, updates):
             continue
         low = text.lower()
         cmd = low.split()[0].split("@")[0]
+        track(u, cmd)
+        # /usuarios: oculto, solo responde al admin (a los demás les cae como desconocido).
+        if cmd in ADMIN_CMDS and cid == ADMIN_CHAT_ID:
+            cmd_usuarios(token, cid, state)
+            continue
         # /ayuda funciona siempre, estés identificado o no.
         if cmd in HELP_CMDS:
             send(token, cid, AYUDA)
