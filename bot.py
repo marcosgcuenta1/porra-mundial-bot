@@ -285,7 +285,7 @@ def ranking_block(porras, results, my_pid):
     start = max(0, idx - 2)
     end = min(n, start + 5)
     start = max(0, end - 5)
-    lines = ["━━━━━━━━━━━━━━━━", "<b>CLASIFICACIÓN ACTUAL</b>"]
+    lines = ["<b>CLASIFICACIÓN ACTUAL</b>"]
     for i in range(start, end):
         pid, name, pts = rk[i]
         lines.append(rank_line(i, name, pts, pid == my_pid))
@@ -321,7 +321,7 @@ def msg_final(home, away, winner, gh, ga, acierto, ranking_txt="", pct=None):
         emoji, fh, team_label(home, winner), gh, ga, team_label(away, winner), fa)
     if pct is not None:
         base += "\nHa acertado el {}% de personas".format(pct)
-    return base + ("\n" + ranking_txt if ranking_txt else "")
+    return base + ("\n━━━━━━━━━━━━━━━━\n" + ranking_txt if ranking_txt else "")
 
 
 # --------------------------------------------------------------------------- #
