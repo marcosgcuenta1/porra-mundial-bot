@@ -285,7 +285,7 @@ def ranking_block(porras, results, my_pid):
     start = max(0, idx - 2)
     end = min(n, start + 5)
     start = max(0, end - 5)
-    lines = ["<b>CLASIFICACIÓN ACTUAL</b>", "━━━━━━━━━━━━━━━━━━━━"]
+    lines = ["━━━━━━━━━━━━━━━━━━━━", "<b>CLASIFICACIÓN ACTUAL</b>"]
     for i in range(start, end):
         pid, name, pts = rk[i]
         lines.append(rank_line(i, name, pts, pid == my_pid))
@@ -305,12 +305,23 @@ def msg_comienzo(home, away, winner):
                                               team_label(away, winner), fa)
 
 
-def msg_final(home, away, winner, gh, ga, acierto, ranking_txt=""):
+def pct_aciertos(porras, home, away, real):
+    """% de participantes activos que acertó el resultado (1/x/2) de este partido."""
+    activos = [p for p in porras if p.get("active")]
+    if not activos:
+        return 0
+    n = sum(1 for p in activos if user_pick(p.get("gr"), home, away) == real)
+    return round(100 * n / len(activos))
+
+
+def msg_final(home, away, winner, gh, ga, acierto, ranking_txt="", pct=None):
     fh, fa = TEAMS[home][1], TEAMS[away][1]
     emoji = "✅" if acierto else "❌"
     base = "{} Final: {} {} {}-{} {} {}".format(
         emoji, fh, team_label(home, winner), gh, ga, team_label(away, winner), fa)
-    return base + ("\n\n" + ranking_txt if ranking_txt else "")
+    if pct is not None:
+        base += "\nHa acertado el {}% de personas".format(pct)
+    return base + ("\n" + ranking_txt if ranking_txt else "")
 
 
 # --------------------------------------------------------------------------- #
@@ -744,10 +755,11 @@ def check_matches(token, porras, state):
             if gh is None or ga is None:
                 continue
             real = home if gh > ga else (away if ga > gh else None)
+            pct = pct_aciertos(porras, home, away, real)
             for cid, u in users:
                 pick = user_pick(porras_by_pid[u["pid"]].get("gr"), home, away)
                 rk = ranking_block(porras, results, u["pid"])
-                if send(token, cid, msg_final(home, away, pick, gh, ga, real == pick, rk)):
+                if send(token, cid, msg_final(home, away, pick, gh, ga, real == pick, rk, pct)):
                     enviados += 1
             final_set.add(mid)
             state["final"].append(mid)
