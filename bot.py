@@ -323,7 +323,7 @@ def msg_comienzo(home, away, winner, dist=None):
         return l1
     tu = fh if winner == home else (fa if winner == away else "X")
     pH, pX, pA = dist
-    return ("{}\nTu predicción: {}\nLa del resto: {}% {} · {}% X · {}% {}"
+    return ("{}\n\nTu predicción: {}\nLa del resto: {}% {} · {}% X · {}% {}"
             .format(l1, tu, pH, fh, pX, pA, fa))
 
 
