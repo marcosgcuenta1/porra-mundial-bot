@@ -411,7 +411,7 @@ def cmd_ranking_full(token, cid, pid, porras):
     if not rk:
         send(token, cid, "Aún no hay clasificación.")
         return
-    lines = ["━━━━━━━━━━━━━━━━", "<b>CLASIFICACIÓN COMPLETA</b>"]
+    lines = ["<b>CLASIFICACIÓN COMPLETA</b>", "━━━━━━━━━━━━━━━━"]
     for i, (p_id, name, pts) in enumerate(rk):
         lines.append(rank_line(i, name, pts, p_id == pid))
     send(token, cid, "\n".join(lines))
