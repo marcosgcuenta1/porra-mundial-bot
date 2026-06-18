@@ -299,10 +299,32 @@ def team_label(code, winner):
     return "<b>{}</b>".format(code) if code == winner else code
 
 
-def msg_comienzo(home, away, winner):
+def pred_distribution(porras, home, away, exclude_pid=None):
+    """(%local, %X, %visitante) de los pronósticos del resto de participantes activos."""
+    activos = [p for p in porras if p.get("active") and p["id"] != exclude_pid]
+    n = len(activos)
+    if not n:
+        return (0, 0, 0)
+    h = a = 0
+    for p in activos:
+        pick = user_pick(p.get("gr"), home, away)
+        if pick == home:
+            h += 1
+        elif pick == away:
+            a += 1
+    x = n - h - a
+    return (round(100 * h / n), round(100 * x / n), round(100 * a / n))
+
+
+def msg_comienzo(home, away, winner, dist=None):
     fh, fa = TEAMS[home][1], TEAMS[away][1]
-    return "Comienzo de {} {} - {} {}".format(fh, team_label(home, winner),
-                                              team_label(away, winner), fa)
+    l1 = "Comienzo de {} {} - {} {}".format(fh, home, away, fa)
+    if dist is None:
+        return l1
+    tu = fh if winner == home else (fa if winner == away else "X")
+    pH, pX, pA = dist
+    return ("{}\nTu predicción: {}\nLa del resto: {}% {} · {}% X · {}% {}"
+            .format(l1, tu, pH, fh, pX, pA, fa))
 
 
 def pct_aciertos(porras, home, away, real):
@@ -340,13 +362,16 @@ UNMUTE_CMDS = ("/avisos", "/activar", "/voz", "/reanudar")
 HELP_CMDS = ("/ayuda", "/help", "/comandos")
 COMPARE_CMDS = ("/compararprediccion", "/comparar", "/comparacion", "/compara")
 ADMIN_CMDS = ("/usuarios", "/uso", "/stats")  # oculto: solo el admin
+WEB_CMDS = ("/web", "/pagina", "/porraweb")
+WEB_URL = "https://cesaresteban.github.io/NFQ-WORLD-CUP/"
 
 # Etiqueta canónica de cada comando, para el contador de uso.
 CMD_LABEL = {}
 for _grp, _lbl in [(RESET_CMDS, "start"), (RANK_CMDS, "clasificacion"),
                    (FULLRANK_CMDS, "clasificacioncompleta"), (PORRA_CMDS, "miporra"),
                    (COMPARE_CMDS, "comparar"), (MUTE_CMDS, "silencio"),
-                   (UNMUTE_CMDS, "avisos"), (HELP_CMDS, "ayuda"), (ADMIN_CMDS, "usuarios")]:
+                   (UNMUTE_CMDS, "avisos"), (HELP_CMDS, "ayuda"),
+                   (WEB_CMDS, "web"), (ADMIN_CMDS, "usuarios")]:
     for _c in _grp:
         CMD_LABEL[_c] = _lbl
 
@@ -357,6 +382,7 @@ AYUDA = ("<b>Comandos</b>\n"
          "/compararprediccion — comparar tus pronósticos con otro\n"
          "/silencio — pausar los avisos\n"
          "/avisos — reactivar los avisos\n"
+         "/web — abrir la web de la porra\n"
          "/start — identificarte o cambiar de identidad\n"
          "/ayuda — esta ayuda")
 
@@ -368,6 +394,7 @@ BOT_COMMANDS = [
     {"command": "compararprediccion", "description": "Comparar tus pronósticos con otro"},
     {"command": "silencio", "description": "Pausar los avisos"},
     {"command": "avisos", "description": "Reactivar los avisos"},
+    {"command": "web", "description": "Abrir la web de la porra"},
     {"command": "start", "description": "Identificarte / cambiar de identidad"},
     {"command": "ayuda", "description": "Ver los comandos"},
 ]
@@ -625,9 +652,13 @@ def process_chat(token, porras, state, updates):
         if cmd in ADMIN_CMDS and cid == ADMIN_CHAT_ID:
             cmd_usuarios(token, cid, state)
             continue
-        # /ayuda funciona siempre, estés identificado o no.
+        # /ayuda y /web funcionan siempre, estés identificado o no.
         if cmd in HELP_CMDS:
             send(token, cid, AYUDA)
+            continue
+        if cmd in WEB_CMDS:
+            send(token, cid, "🌐 Web de la porra:\n" + WEB_URL,
+                 reply_markup={"inline_keyboard": [[{"text": "Abrir la web", "url": WEB_URL}]]})
             continue
         if u.get("confirmed"):
             if u.get("awaiting_compare") and not text.startswith("/"):
@@ -743,7 +774,8 @@ def check_matches(token, porras, state):
         if mid not in comienzo_set and toca_comienzo and not demasiado_tarde:
             for cid, u in users:
                 pick = user_pick(porras_by_pid[u["pid"]].get("gr"), home, away)
-                if send(token, cid, msg_comienzo(home, away, pick)):
+                dist = pred_distribution(porras, home, away, u["pid"])
+                if send(token, cid, msg_comienzo(home, away, pick, dist)):
                     enviados += 1
             comienzo_set.add(mid)
             state["comienzo"].append(mid)
