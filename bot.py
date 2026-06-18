@@ -321,10 +321,12 @@ def msg_comienzo(home, away, winner, dist=None):
     l1 = "Comienzo de {} {} - {} {}".format(fh, home, away, fa)
     if dist is None:
         return l1
-    tu = fh if winner == home else (fa if winner == away else "X")
     pH, pX, pA = dist
-    return ("{}\nTu predicción: {}\nLa del resto: {}% {} · {}% X · {}% {}"
-            .format(l1, tu, pH, fh, pX, pA, fa))
+    tu = " (tu predicción)"
+    return "{}\nPredicciones:\n{} · {}%{}\nX · {}%{}\n{} · {}%{}".format(
+        l1, fh, pH, tu if winner == home else "",
+        pX, tu if winner is None else "",
+        fa, pA, tu if winner == away else "")
 
 
 def pct_aciertos(porras, home, away, real):
@@ -772,9 +774,9 @@ def check_matches(token, porras, state):
 
         # ── Comienzo: a cada usuario, su pronóstico ──
         if mid not in comienzo_set and toca_comienzo and not demasiado_tarde:
+            dist = pred_distribution(porras, home, away)
             for cid, u in users:
                 pick = user_pick(porras_by_pid[u["pid"]].get("gr"), home, away)
-                dist = pred_distribution(porras, home, away, u["pid"])
                 if send(token, cid, msg_comienzo(home, away, pick, dist)):
                     enviados += 1
             comienzo_set.add(mid)
