@@ -486,9 +486,15 @@ def player_goals(goals_map, name):
 
 def _gol_line(etq, name, predicted, goals_map):
     g = player_goals(goals_map, name)
-    real = " · {} {}".format(g, "gol" if g == 1 else "goles") if g is not None else ""
-    pred = " (pusiste {})".format(predicted) if predicted else ""
-    return "{}: {}{}{}".format(etq, name, real, pred)
+    if g is not None and predicted:
+        suf = " ({}/{})".format(g, predicted)
+    elif g is not None:
+        suf = " ({})".format(g)
+    elif predicted:
+        suf = " ({})".format(predicted)
+    else:
+        suf = ""
+    return "{}: {}{}".format(etq, name, suf)
 
 
 def cmd_miporra(token, cid, p, goals_map=None):
