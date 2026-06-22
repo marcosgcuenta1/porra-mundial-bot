@@ -33,6 +33,9 @@ SB_KEY = "sb_publishable_gzIrT1J8xG5ZGTIxJHFzfg_BAO-XGPm"
 # Misma API de partidos que usa la web de la porra (resultados consistentes con el ranking).
 SPORTS_URL = "https://sports.bzzoiro.com/api/v2/events/?league_id=27&season_id=188&limit=200"
 SPORTS_KEY = os.environ.get("SPORTS_TOKEN", "65282d7cc77d80d27171566864fc427e7a6f1266")
+# Goleadores reales (ESPN, sin registro): se suman partido a partido.
+ESPN_SB = "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=20260611-20260720&limit=400"
+ESPN_SUMMARY = "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/summary?event={}"
 STATE_FILE = os.environ.get("STATE_FILE", os.path.join(os.path.dirname(__file__), "state.json"))
 ADMIN_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "1104050697")  # solo el admin ve /usuarios
 ENC_FILE = os.path.join(os.path.dirname(STATE_FILE), "state.enc")
@@ -118,6 +121,7 @@ def load_state():
     st.setdefault("final", [])
     st.setdefault("seeded", False)
     st.setdefault("tg_offset", 0)
+    st.setdefault("scorers", {"events": [], "goals": {}, "ts": None})
     # Migración del antiguo formato de un solo usuario.
     if "users" not in st:
         st["users"] = {}
@@ -417,7 +421,77 @@ def cmd_ranking_full(token, cid, pid, porras):
     send(token, cid, "\n".join(lines))
 
 
-def cmd_miporra(token, cid, p):
+def normalize_player(name):
+    s = unicodedata.normalize("NFKD", name or "")
+    s = "".join(c for c in s if not unicodedata.combining(c)).lower()
+    return " ".join(s.replace(".", " ").replace("-", " ").split())
+
+
+def espn_get(url):
+    r = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=15)
+    return r.json()
+
+
+def refresh_scorers(state):
+    """Suma los goles por jugador desde los partidos del Mundial (ESPN). Incremental."""
+    sc = state.setdefault("scorers", {"events": [], "goals": {}, "ts": None})
+    done = set(sc["events"])
+    try:
+        sb = espn_get(ESPN_SB)
+    except Exception as e:
+        print("ESPN scoreboard error:", e, file=sys.stderr)
+        return 0
+    nuevos = 0
+    for e in sb.get("events", []):
+        if not (e.get("status") or {}).get("type", {}).get("completed"):
+            continue
+        eid = str(e.get("id"))
+        if eid in done:
+            continue
+        try:
+            s = espn_get(ESPN_SUMMARY.format(eid))
+            for k in s.get("keyEvents", []):
+                tt = (k.get("type") or {}).get("type", "")
+                if tt.startswith("goal") or tt == "penalty---scored":
+                    parts = k.get("participants") or []
+                    nm = parts[0].get("displayName") if parts else None
+                    if not nm and parts:
+                        nm = (parts[0].get("athlete") or {}).get("displayName")
+                    if nm:
+                        key = normalize_player(nm)
+                        sc["goals"][key] = sc["goals"].get(key, 0) + 1
+            sc["events"].append(eid)
+            done.add(eid)
+            nuevos += 1
+        except Exception as e2:
+            print("ESPN summary error:", e2, file=sys.stderr)
+    sc["ts"] = now_iso()
+    return nuevos
+
+
+def player_goals(goals_map, name):
+    """Goles reales de un jugador (0 si no ha marcado). None si no hay datos cargados."""
+    if goals_map is None or not name:
+        return None
+    n = normalize_player(name)
+    if n in goals_map:
+        return goals_map[n]
+    ln = n.split()[-1] if n.split() else n
+    for k, g in goals_map.items():
+        ks = k.split()
+        if ks and ks[-1] == ln:
+            return g
+    return 0
+
+
+def _gol_line(etq, name, predicted, goals_map):
+    g = player_goals(goals_map, name)
+    real = " · {} {}".format(g, "gol" if g == 1 else "goles") if g is not None else ""
+    pred = " (pusiste {})".format(predicted) if predicted else ""
+    return "{}: {}{}{}".format(etq, name, real, pred)
+
+
+def cmd_miporra(token, cid, p, goals_map=None):
     if not p:
         send(token, cid, "No encuentro tu porra.")
         return
@@ -425,11 +499,9 @@ def cmd_miporra(token, cid, p):
     if p.get("mvp"):
         lines.append("🏆 MVP: " + p["mvp"])
     if p.get("gol1"):
-        lines.append("⚽ Goleador del torneo: " + p["gol1"] +
-                     (" ({})".format(p["gol1n"]) if p.get("gol1n") else ""))
+        lines.append(_gol_line("⚽ Goleador del torneo", p["gol1"], p.get("gol1n"), goals_map))
     if p.get("gol2"):
-        lines.append("🇪🇸 Goleador de España: " + p["gol2"] +
-                     (" ({})".format(p["gol2n"]) if p.get("gol2n") else ""))
+        lines.append(_gol_line("🇪🇸 Goleador de España", p["gol2"], p.get("gol2n"), goals_map))
     for campo, etq in (("camp", "🥇 Campeón"), ("sub", "🥈 Subcampeón"),
                        ("p3", "🥉 Tercero"), ("p4", "4º")):
         if p.get(campo):
@@ -677,7 +749,8 @@ def process_chat(token, porras, state, updates):
             elif cmd in FULLRANK_CMDS:
                 cmd_ranking_full(token, cid, u["pid"], porras)
             elif cmd in PORRA_CMDS:
-                cmd_miporra(token, cid, by_id.get(u["pid"]) or {})
+                cmd_miporra(token, cid, by_id.get(u["pid"]) or {},
+                            (state.get("scorers") or {}).get("goals"))
             elif cmd in MUTE_CMDS:
                 u["muted"] = True
                 send(token, cid, "🔕 Avisos en pausa. Reactívalos con /avisos.")
@@ -826,6 +899,7 @@ def run_loop():
     porras = fetch_porras()
     porras_ts = time.monotonic()
     last_match = 0.0
+    last_scorers = 0.0
     start = time.monotonic()
     # El proceso vive hasta ~5h50 (cerca del límite de 6h de un job). Así, si el cron de
     # relevo se salta una vez, el bot sigue escuchando en vez de caerse.
@@ -847,6 +921,11 @@ def run_loop():
             if time.monotonic() - last_match > 120:
                 check_matches(token, porras, state)
                 last_match = time.monotonic()
+
+            if time.monotonic() - last_scorers > 1200:  # goleadores cada 20 min (incremental)
+                if refresh_scorers(state):
+                    persist(state, force=True)
+                last_scorers = time.monotonic()
         except Exception as e:  # un fallo puntual de red no debe tumbar el bucle
             print("loop error:", e, file=sys.stderr)
             time.sleep(5)
