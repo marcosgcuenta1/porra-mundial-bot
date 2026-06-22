@@ -347,8 +347,7 @@ PHRASES_ESP = [
     "💪 ¡A por todas, España!",
     "🇪🇸 ¡Esto huele a campeones!",
     "⚡ ¡Vamooos! La Roja no para",
-    "🎉 ¡Gana España y se viene arriba!",
-    "🏆 ¡Camino al título, La Roja!",
+    "🏆 ¡Camino al título!",
     "🔥 ¡A seguir soñando, España!",
     "🇪🇸 ¡La Roja sigue intratable!",
 ]
