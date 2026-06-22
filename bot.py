@@ -340,11 +340,27 @@ def pct_aciertos(porras, home, away, real):
     return round(100 * n / len(activos))
 
 
-def msg_final(home, away, winner, gh, ga, acierto, ranking_txt="", pct=None):
+PHRASES_ESP = [
+    "🔥 ¡Qué grande La Roja! A por la siguiente",
+    "🇪🇸 ¡VAMOS ESPAÑA! Imparables 🔥",
+    "🥳 ¡Otra victoria de La Roja!",
+    "💪 ¡A por todas, España!",
+    "🇪🇸 ¡Esto huele a campeones!",
+    "⚡ ¡Vamooos! La Roja no para",
+    "🎉 ¡Gana España y se viene arriba!",
+    "🏆 ¡Camino al título, La Roja!",
+    "🔥 ¡A seguir soñando, España!",
+    "🇪🇸 ¡La Roja sigue intratable!",
+]
+
+
+def msg_final(home, away, winner, gh, ga, acierto, ranking_txt="", pct=None, cheer=None):
     fh, fa = TEAMS[home][1], TEAMS[away][1]
     emoji = "✅" if acierto else "❌"
     base = "{} Final: {} {} {}-{} {} {}".format(
         emoji, fh, team_label(home, winner), gh, ga, team_label(away, winner), fa)
+    if cheer:
+        base += "\n" + cheer
     if pct is not None:
         base += "\nHa acertado el {}% de personas".format(pct)
     return base + ("\n\n━━━━━━━━━━━━━━━━\n\n" + ranking_txt if ranking_txt else "")
@@ -867,10 +883,11 @@ def check_matches(token, porras, state):
                 continue
             real = home if gh > ga else (away if ga > gh else None)
             pct = pct_aciertos(porras, home, away, real)
+            cheer = PHRASES_ESP[int(mid) % len(PHRASES_ESP)] if real == "ESP" else None
             for cid, u in users:
                 pick = user_pick(porras_by_pid[u["pid"]].get("gr"), home, away)
                 rk = ranking_block(porras, results, u["pid"])
-                if send(token, cid, msg_final(home, away, pick, gh, ga, real == pick, rk, pct)):
+                if send(token, cid, msg_final(home, away, pick, gh, ga, real == pick, rk, pct, cheer)):
                     enviados += 1
             final_set.add(mid)
             state["final"].append(mid)
