@@ -381,6 +381,7 @@ UNMUTE_CMDS = ("/avisos", "/activar", "/voz", "/reanudar")
 HELP_CMDS = ("/ayuda", "/help", "/comandos")
 COMPARE_CMDS = ("/compararprediccion", "/comparar", "/comparacion", "/compara")
 ADMIN_CMDS = ("/usuarios", "/uso", "/stats")  # oculto: solo el admin
+BROADCAST_CMDS = ("/aviso", "/anuncio", "/broadcast")  # oculto: solo el admin, manda a todos
 WEB_CMDS = ("/web", "/pagina", "/porraweb")
 WEB_URL = "https://cesaresteban.github.io/NFQ-WORLD-CUP/"
 
@@ -390,7 +391,8 @@ for _grp, _lbl in [(RESET_CMDS, "start"), (RANK_CMDS, "clasificacion"),
                    (FULLRANK_CMDS, "clasificacioncompleta"), (PORRA_CMDS, "miporra"),
                    (COMPARE_CMDS, "comparar"), (MUTE_CMDS, "silencio"),
                    (UNMUTE_CMDS, "avisos"), (HELP_CMDS, "ayuda"),
-                   (WEB_CMDS, "web"), (ADMIN_CMDS, "usuarios")]:
+                   (WEB_CMDS, "web"), (ADMIN_CMDS, "usuarios"),
+                   (BROADCAST_CMDS, "aviso")]:
     for _c in _grp:
         CMD_LABEL[_c] = _lbl
 
@@ -744,6 +746,20 @@ def process_chat(token, porras, state, updates):
         # /usuarios: oculto, solo responde al admin (a los demás les cae como desconocido).
         if cmd in ADMIN_CMDS and cid == ADMIN_CHAT_ID:
             cmd_usuarios(token, cid, state)
+            continue
+        # /aviso: oculto, solo el admin; manda el texto a TODOS los identificados.
+        if cmd in BROADCAST_CMDS and cid == ADMIN_CHAT_ID:
+            parts = text.split(None, 1)
+            anuncio = parts[1].strip() if len(parts) > 1 else ""
+            if not anuncio:
+                send(token, cid, "Uso: /aviso TU MENSAJE")
+            else:
+                esc = anuncio.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+                n = 0
+                for ucid, uu in state["users"].items():
+                    if uu.get("confirmed") and send(token, ucid, "📢 " + esc):
+                        n += 1
+                send(token, cid, "📢 Enviado a {} personas.".format(n))
             continue
         # /ayuda y /web funcionan siempre, estés identificado o no.
         if cmd in HELP_CMDS:
