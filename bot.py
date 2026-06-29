@@ -555,7 +555,7 @@ def cmd_miporra(token, cid, p, goals_map=None, porras=None):
         ko_list = None
     brk = bracket_block(p.get("ko"), ko_list)
     if brk:
-        lines.append("\n🗺️ <b>Tu bracket</b> (de octavos, el equipo que pasa según tú):")
+        lines.append("\n🗺️ <b>Tu bracket</b> (tu pronóstico):")
         lines.extend(brk)
         if ko_list:
             lines.append("\n✅ acertado · 🎯 con marcador exacto · ❌ eliminado")
@@ -657,9 +657,10 @@ def _ko_reality_mark(pfx, team, pred, ko_list):
 
 
 def bracket_block(ko, ko_list=None):
-    """Pinta el bracket de una porra agrupado por ronda. En 16avos (cruces fijos) muestra el
-    cruce; de octavos en adelante muestra el EQUIPO que pasa según el usuario (el rival real
-    puede no coincidir). Si se pasa ko_list, marca ✅/🎯/❌ según los resultados reales."""
+    """Pinta el bracket de una porra agrupado por ronda: el CRUCE completo (ambos equipos +
+    marcador) en todas las rondas. De octavos en adelante el rival es el que el usuario puso
+    (puede no coincidir con la realidad). Si se pasa ko_list, marca ✅/🎯/❌ según si el equipo
+    que el usuario dio por clasificado ganó/cayó en su partido real de esa ronda."""
     ko = ko or {}
     lines = []
     for label, pfx, n in KO_ROUNDS:
@@ -671,14 +672,9 @@ def bracket_block(ko, ko_list=None):
         for s in slots:
             w = match_team(s.get("winner"))
             mark = _ko_reality_mark(pfx, w, s, ko_list)
-            if pfx == "c":   # 16avos: cruce fijo, se muestra el partido
-                fh, ch = _ko_flag(s.get("homeTeam"))
-                fa, ca = _ko_flag(s.get("awayTeam"))
-                lines.append("{} {} {} {} {}{}".format(fh, ch, _ko_own_score(s), ca, fa, mark))
-            else:            # octavos+: el equipo que pasa según el usuario + su marcador
-                fw = TEAMS.get(w, (None, ""))[1] if w else ""
-                lines.append("{} {} ({}){}".format(fw, w or s.get("winner"),
-                                                    _ko_team_score(s, w), mark))
+            fh, ch = _ko_flag(s.get("homeTeam"))
+            fa, ca = _ko_flag(s.get("awayTeam"))
+            lines.append("{} {} {} {} {}{}".format(fh, ch, _ko_own_score(s), ca, fa, mark))
     return lines
 
 
