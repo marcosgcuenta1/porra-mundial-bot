@@ -558,8 +558,8 @@ def cmd_miporra(token, cid, p, goals_map=None, porras=None):
         lines.append("\n🗺️ <b>Tu bracket</b> (tu pronóstico):")
         lines.extend(brk)
         if ko_list:
-            lines.append("\n✅ acertaste quién pasa · 🎯 además el marcador exacto · ❌ eliminado"
-                         "\n<i>El (+N) suma un extra si además acertaste el rival exacto del cruce.</i>")
+            lines.append("\n❌ nada\n☑️ ganador\n✅ ganador y marcador exacto"
+                         "\n👑 ganador, marcador y rival exacto")
     send(token, cid, "\n".join(lines))
 
 
@@ -657,7 +657,7 @@ def ko_pick_eval(pfx, pred, ko_list):
     if outcome is None:
         return ("", 0, False)              # su partido de esa ronda aún no se ha jugado
     if outcome == "loss":
-        return ("❌", 0, True)
+        return ("❌", 0, True)              # nada
     tp, sp, fp = KO_PTS[pfx]
     # marcador desde la perspectiva del ganador (goles del ganador, goles del rival)
     pw = (pred.get("scoreH"), pred.get("scoreA")) if match_team(pred.get("homeTeam")) == team \
@@ -665,10 +665,11 @@ def ko_pick_eval(pfx, pred, ko_list):
     rw = (r["sh"], r["sa"]) if r["winner_c"] == r["home_c"] else (r["sa"], r["sh"])
     exact = _int(pw[0]) is not None and _int(pw[0]) == _int(rw[0]) and _int(pw[1]) == _int(rw[1])
     if not exact:
-        return ("✅", tp, True)
+        return ("☑️", tp, True)             # solo ganador
     cruce = {match_team(pred.get("homeTeam")), match_team(pred.get("awayTeam"))}
-    full = fp if (None not in cruce and cruce == {r["home_c"], r["away_c"]}) else 0
-    return ("🎯", tp + sp + full, True)
+    if fp > 0 and None not in cruce and cruce == {r["home_c"], r["away_c"]}:
+        return ("👑", tp + sp + fp, True)   # ganador + marcador + rival exacto (full)
+    return ("✅", tp + sp, True)            # ganador + marcador exacto
 
 
 def bracket_block(ko, ko_list=None):
