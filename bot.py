@@ -625,7 +625,7 @@ def _ko_pred_score(pred, h, a):
 
 # Rondas del bracket en orden (etiqueta, prefijo de slot, nº de cruces)
 KO_ROUNDS = [("16avos", "c", 16), ("Octavos", "oct", 8), ("Cuartos", "qf", 4),
-             ("Semifinales", "sf", 2), ("🥉 3.er puesto", "p3f", 1), ("🏆 Final", "fin2", 1)]
+             ("Semifinales", "sf", 2), ("🥉 3er puesto", "p3f", 1), ("🏆 Final", "fin2", 1)]
 
 
 def _ko_flag(name):
@@ -643,17 +643,31 @@ def _ko_own_score(s):
     return "{}-{}".format(sh, sa)
 
 
-def _ko_reality_mark(pfx, team, pred, ko_list):
-    """' ✅'/' 🎯'/' ❌'/'' según si 'team' ganó/cayó en su partido real de esa ronda."""
-    if ko_list is None or not team:
-        return ""
+def ko_pick_eval(pfx, pred, ko_list):
+    """(emoji, puntos, jugado) de un acierto, replicando las reglas de la web: ganador (team) +
+    marcador exacto (desde la perspectiva del ganador) + full (además el rival exacto). Solo
+    para mostrar '(+N)' en /miporra; el ranking oficial sale del motor de la web."""
+    if ko_list is None or pfx not in KO_PTS or not pred or not pred.get("winner"):
+        return ("", 0, False)
+    team = match_team(pred.get("winner"))
+    if not team:
+        return ("", 0, False)
     outcome, r = ko_team_outcome(pfx, team, ko_list)
-    if outcome == "win":
-        exact = r and pred.get("scoreH") == r["sh"] and pred.get("scoreA") == r["sa"]
-        return " 🎯" if exact else " ✅"
+    if outcome is None:
+        return ("", 0, False)              # su partido de esa ronda aún no se ha jugado
     if outcome == "loss":
-        return " ❌"
-    return ""
+        return ("❌", 0, True)
+    tp, sp, fp = KO_PTS[pfx]
+    # marcador desde la perspectiva del ganador (goles del ganador, goles del rival)
+    pw = (pred.get("scoreH"), pred.get("scoreA")) if match_team(pred.get("homeTeam")) == team \
+        else (pred.get("scoreA"), pred.get("scoreH"))
+    rw = (r["sh"], r["sa"]) if r["winner_c"] == r["home_c"] else (r["sa"], r["sh"])
+    exact = _int(pw[0]) is not None and _int(pw[0]) == _int(rw[0]) and _int(pw[1]) == _int(rw[1])
+    if not exact:
+        return ("✅", tp, True)
+    cruce = {match_team(pred.get("homeTeam")), match_team(pred.get("awayTeam"))}
+    full = fp if (None not in cruce and cruce == {r["home_c"], r["away_c"]}) else 0
+    return ("🎯", tp + sp + full, True)
 
 
 def bracket_block(ko, ko_list=None):
@@ -670,11 +684,11 @@ def bracket_block(ko, ko_list=None):
             continue
         lines.append("\n<b>{}</b>".format(label))
         for s in slots:
-            w = match_team(s.get("winner"))
-            mark = _ko_reality_mark(pfx, w, s, ko_list)
+            emoji, pts, played = ko_pick_eval(pfx, s, ko_list)
             fh, ch = _ko_flag(s.get("homeTeam"))
             fa, ca = _ko_flag(s.get("awayTeam"))
-            lines.append("{} {} {} {} {}{}".format(fh, ch, _ko_own_score(s), ca, fa, mark))
+            tail = " · {} (+{} puntos)".format(emoji, pts) if played else ""
+            lines.append("{} {} {} {} {}{}".format(fh, ch, _ko_own_score(s), ca, fa, tail))
     return lines
 
 
@@ -984,10 +998,11 @@ def confirmed_users(state, porras_by_pid):
 KO_MAP = {"round of 32": "c", "round of 16": "oct", "quarterfinals": "qf",
           "quarter-finals": "qf", "semifinals": "sf", "semi-finals": "sf",
           "final": "fin2", "match for 3rd place": "p3f", "3rd place final": "p3f"}
-# Puntos por ronda: (acierto ganador, bonus marcador exacto). Replica la web de César
-# (KO_PTS en su HTML): el 3er puesto p3f SÍ puntúa desde que reescribió calcPuntos.
-KO_PTS = {"c": (5, 5), "oct": (10, 10), "qf": (15, 15), "sf": (20, 20),
-          "p3f": (25, 25), "fin2": (30, 30)}
+# Puntos por ronda (ganador, marcador exacto, full=además el rival exacto). Mismos valores
+# que el KO_PTS de la web de César. Solo se usan para mostrar '(+N)' en /miporra; el ranking
+# oficial lo calcula su web.
+KO_PTS = {"c": (5, 5, 0), "oct": (10, 10, 10), "qf": (15, 15, 15),
+          "sf": (20, 20, 20), "p3f": (25, 25, 25), "fin2": (30, 30, 30)}
 
 
 R16_PAIRS = [(0, 1), (2, 3), (4, 5), (6, 7), (8, 9), (10, 11), (12, 13), (14, 15)]
