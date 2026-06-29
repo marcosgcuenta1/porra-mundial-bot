@@ -283,7 +283,7 @@ def rank_line(i, name, pts, is_me):
 
 
 def ranking_block(porras, points_by_id, my_pid):
-    if my_pid is None:
+    if my_pid is None or not points_by_id:   # sin puntos (web caída) -> sin bloque
         return ""
     rk = ranking(porras, points_by_id)
     idx = next((i for i, r in enumerate(rk) if r[0] == my_pid), None)
@@ -425,15 +425,29 @@ BOT_COMMANDS = [
 ]
 
 
+RANKING_NO_DISP = ("⚠️ La clasificación no está disponible ahora mismo (la web de la porra "
+                   "está dando un error). Inténtalo en un rato.")
+
+
 def cmd_ranking(token, cid, pid, porras):
     matches = fetch_matches()
-    blk = ranking_block(porras, web_points(porras, matches), pid)
+    try:
+        pts = web_points(porras, matches)
+    except RuntimeError:
+        send(token, cid, RANKING_NO_DISP)
+        return
+    blk = ranking_block(porras, pts, pid)
     send(token, cid, blk or "Aún no estás en la clasificación (o no hay resultados todavía).")
 
 
 def cmd_ranking_full(token, cid, pid, porras):
     matches = fetch_matches()
-    rk = ranking(porras, web_points(porras, matches))
+    try:
+        pts = web_points(porras, matches)
+    except RuntimeError:
+        send(token, cid, RANKING_NO_DISP)
+        return
+    rk = ranking(porras, pts)
     if not rk:
         send(token, cid, "Aún no hay clasificación.")
         return
@@ -1419,7 +1433,12 @@ def check_matches(token, porras, state):
 
     def _pts():
         if "v" not in _pts_cache:
-            _pts_cache["v"] = web_points(porras, matches)
+            try:
+                _pts_cache["v"] = web_points(porras, matches)
+            except RuntimeError as e:
+                # Web caída/rota: se manda el final sin la tabla (mejor que no avisar).
+                print("ranking no disponible (web):", e, file=sys.stderr)
+                _pts_cache["v"] = None
         return _pts_cache["v"]
 
     relevant = []
