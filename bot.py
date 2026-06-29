@@ -539,27 +539,45 @@ def cmd_miporra(token, cid, p, goals_map=None):
     nxt = next_matches(3)
     if nxt:
         gr = p.get("gr") or {}
+        ko = p.get("ko") or {}
         lines.append("\n📅 <b>Próximos partidos</b> (tu pronóstico):")
-        for k, h, a in nxt:
-            pick = user_pick(gr, h, a)
+        for k, h, a, slot in nxt:
             when = k.astimezone(ESP_TZ).strftime("%d/%m %H:%M")
-            lines.append("{} · {} {} - {} {} → <b>{}</b>".format(
-                when, TEAMS[h][1], h, a, TEAMS[a][1], pick or "empate"))
+            base = "{} · {} {} - {} {}".format(when, TEAMS[h][1], h, a, TEAMS[a][1])
+            if slot:  # KO: marcador exacto
+                pred = ko.get(slot)
+                if pred and pred.get("winner"):
+                    ph = match_team(pred.get("homeTeam"))
+                    if ph == a:  # bracket al revés que el partido real
+                        tu = "{}-{}".format(pred.get("scoreA"), pred.get("scoreH"))
+                    else:
+                        tu = "{}-{}".format(pred.get("scoreH"), pred.get("scoreA"))
+                else:
+                    tu = "—"
+                lines.append("{} → <b>{}</b>".format(base, tu))
+            else:  # grupos: ganador
+                lines.append("{} → <b>{}</b>".format(base, user_pick(gr, h, a) or "empate"))
     send(token, cid, "\n".join(lines))
 
 
 def next_matches(n=3):
-    """Los n próximos partidos de grupos sin empezar, ordenados por hora."""
+    """Los n próximos partidos sin empezar (grupos o KO): (hora, home, away, slot|None)."""
+    matches = fetch_matches()
+    cidof = ko_cid_map(matches)
+    now = datetime.now(timezone.utc)
     up = []
-    for m in fetch_matches():
+    for m in matches:
         h, a = match_team(m.get("home_team")), match_team(m.get("away_team"))
-        if not (h and a and frozenset((h, a)) in GROUP_KEYS):
+        if not (h and a):
+            continue
+        slot = cidof.get(m.get("id"))
+        if not (slot or frozenset((h, a)) in GROUP_KEYS):
             continue
         st = (m.get("status") or "").lower()
         k = parse_dt(m.get("event_date"))
-        if st in LIVE_ST or st in FINISHED_ST or k is None:
+        if st in LIVE_ST or st in FINISHED_ST or k is None or k < now:
             continue
-        up.append((k, h, a))
+        up.append((k, h, a, slot))
     up.sort(key=lambda x: x[0])
     return up[:n]
 
@@ -825,8 +843,8 @@ def process_chat(token, porras, state, updates):
 def fetch_matches():
     r = requests.get(SPORTS_URL, headers={"Authorization": "Token " + SPORTS_KEY}, timeout=30)
     if r.status_code != 200:
-        print("ERROR API partidos ({}): {}".format(r.status_code, r.text[:200]), file=sys.stderr)
-        sys.exit(1)
+        # Un error puntual NO debe tumbar el bucle (lo captura run_loop y reintenta).
+        raise RuntimeError("API partidos {}: {}".format(r.status_code, r.text[:120]))
     return r.json().get("results", [])
 
 
@@ -958,7 +976,7 @@ def ko_stats_line(g, e):
     return "El {}% ha acertado el ganador y el {}% el exacto".format(g, e)
 
 
-def msg_final_ko(home, away, real, pred, g, e, ranking_txt=""):
+def msg_final_ko(home, away, real, pred, g, e, ranking_txt="", cheer=None):
     sh, sa, rw = real["sh"], real["sa"], real["winner"]
     pw = match_team(pred.get("winner")) if (pred and pred.get("winner")) else None
     acierto = pw is not None and pw == rw
@@ -966,6 +984,8 @@ def msg_final_ko(home, away, real, pred, g, e, ranking_txt=""):
     pen = " (pen.)" if sh == sa and rw else ""
     out = "{} Final: {} {} {}-{} {} {}{}".format(
         "✅" if acierto else "❌", TEAMS[home][1], home, sh, sa, away, TEAMS[away][1], pen)
+    if cheer:
+        out += "\n" + cheer
     if exacto:
         out += "\n🎯 ¡Resultado exacto!"
     out += "\n" + (_pred_line(pred) if pred and pred.get("winner") else "Tu predicción: —")
@@ -1094,10 +1114,11 @@ def check_matches(token, porras, state):
             if not real or not real.get("winner"):
                 continue
             g, e = ko_pcts(porras, slot, real)
+            cheer = PHRASES_ESP[int(mid) % len(PHRASES_ESP)] if real["winner"] == "ESP" else None
             for chat, u in users:
                 pred = (porras_by_pid[u["pid"]].get("ko") or {}).get(slot)
                 rk = ranking_block(porras, results, u["pid"], ko_res)
-                if send(token, chat, msg_final_ko(home, away, real, pred, g, e, rk)):
+                if send(token, chat, msg_final_ko(home, away, real, pred, g, e, rk, cheer)):
                     enviados += 1
             final_set.add(mid)
             state["final"].append(mid)
