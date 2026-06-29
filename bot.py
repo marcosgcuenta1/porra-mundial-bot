@@ -429,14 +429,14 @@ BOT_COMMANDS = [
 def cmd_ranking(token, cid, pid, porras):
     matches = fetch_matches()
     results = group_results(matches)
-    ko_res = ko_real(matches, ko_cid_map(matches))
+    ko_res = ko_real(matches, ko_cid_map(matches, porras))
     blk = ranking_block(porras, results, pid, ko_res)
     send(token, cid, blk or "Aún no estás en la clasificación (o no hay resultados todavía).")
 
 
 def cmd_ranking_full(token, cid, pid, porras):
     matches = fetch_matches()
-    rk = ranking(porras, group_results(matches), ko_real(matches, ko_cid_map(matches)))
+    rk = ranking(porras, group_results(matches), ko_real(matches, ko_cid_map(matches, porras)))
     if not rk:
         send(token, cid, "Aún no hay clasificación.")
         return
@@ -522,7 +522,7 @@ def _gol_line(etq, name, predicted, goals_map):
     return "{}: {}{}".format(etq, name, suf)
 
 
-def cmd_miporra(token, cid, p, goals_map=None):
+def cmd_miporra(token, cid, p, goals_map=None, porras=None):
     if not p:
         send(token, cid, "No encuentro tu porra.")
         return
@@ -538,7 +538,7 @@ def cmd_miporra(token, cid, p, goals_map=None):
         if p.get(campo):
             lines.append("{}: {}".format(etq, p[campo]))
 
-    nxt = next_matches(3)
+    nxt = next_matches(3, porras)
     if nxt:
         gr = p.get("gr") or {}
         ko = p.get("ko") or {}
@@ -562,10 +562,10 @@ def cmd_miporra(token, cid, p, goals_map=None):
     send(token, cid, "\n".join(lines))
 
 
-def next_matches(n=3):
+def next_matches(n=3, porras=None):
     """Los n próximos partidos sin empezar (grupos o KO): (hora, home, away, slot|None)."""
     matches = fetch_matches()
-    cidof = ko_cid_map(matches)
+    cidof = ko_cid_map(matches, porras)
     now = datetime.now(timezone.utc)
     up = []
     for m in matches:
@@ -626,7 +626,7 @@ def do_compare_pid(token, cid, my_pid, other_pid, porras):
     my_ko, their_ko = me.get("ko") or {}, other.get("ko") or {}
     lines = ["<b>TU PREDICCIÓN vs {}</b>".format(other_name.upper()),
              "━━━━━━━━━━━━━━━━"]
-    for k, h, a, slot in next_matches(10):
+    for k, h, a, slot in next_matches(10, porras):
         if slot:  # KO: marcador exacto
             mp = _ko_pred_score(my_ko.get(slot), h, a)
             tp = _ko_pred_score(their_ko.get(slot), h, a)
@@ -827,7 +827,7 @@ def process_chat(token, porras, state, updates):
                 cmd_ranking_full(token, cid, u["pid"], porras)
             elif cmd in PORRA_CMDS:
                 cmd_miporra(token, cid, by_id.get(u["pid"]) or {},
-                            (state.get("scorers") or {}).get("goals"))
+                            (state.get("scorers") or {}).get("goals"), porras)
             elif cmd in MUTE_CMDS:
                 u["muted"] = True
                 send(token, cid, "🔕 Avisos en pausa. Reactívalos con /avisos.")
@@ -887,20 +887,100 @@ KO_MAP = {"round of 32": "c", "round of 16": "oct", "quarterfinals": "qf",
 KO_PTS = {"c": (5, 5), "oct": (10, 10), "qf": (15, 15), "sf": (25, 20), "fin2": (50, 30)}
 
 
-def ko_cid_map(matches):
-    """match_id -> slot (c0, oct0, qf0...): por ronda, ordenado por fecha (como la web)."""
-    ko = [m for m in matches if (m.get("round_name") or "").strip().lower() in KO_MAP]
-    ko.sort(key=lambda m: m.get("event_date") or "")
-    n, out = {}, {}
-    for m in ko:
-        pfx = KO_MAP[(m.get("round_name") or "").strip().lower()]
-        out[m["id"]] = pfx + str(n.get(pfx, 0))
-        n[pfx] = n.get(pfx, 0) + 1
+R16_PAIRS = [(0, 1), (2, 3), (4, 5), (6, 7), (8, 9), (10, 11), (12, 13), (14, 15)]
+QF_PAIRS = [(0, 1), (2, 3), (4, 5), (6, 7)]
+SF_PAIRS = [(0, 1), (2, 3)]
+
+
+def _match_winner(m):
+    """Code del ganador de un partido terminado (con prórroga/penaltis), o None."""
+    if (m.get("status") or "").lower() not in FINISHED_ST:
+        return None
+    et = m.get("extra_time_score") or {}
+    sh = et.get("home") if et.get("home") is not None else m.get("home_score")
+    sa = et.get("away") if et.get("away") is not None else m.get("away_score")
+    home, away = match_team(m.get("home_team")), match_team(m.get("away_team"))
+    if sh is None or sa is None or not home or not away:
+        return None
+    if sh > sa:
+        return home
+    if sa > sh:
+        return away
+    pen = m.get("penalty_shootout") or {}
+    return home if (pen.get("home", 0) or 0) > (pen.get("away", 0) or 0) else away
+
+
+def _ref_r32(porras):
+    """{0..15: frozenset(codeH, codeA)} de los dieciseisavos, por consenso de las porras."""
+    out = {}
+    for i in range(16):
+        cnt = {}
+        for p in porras or []:
+            pr = (p.get("ko") or {}).get("c" + str(i))
+            if pr:
+                ch, ca = match_team(pr.get("homeTeam")), match_team(pr.get("awayTeam"))
+                if ch and ca:
+                    key = frozenset((ch, ca))
+                    cnt[key] = cnt.get(key, 0) + 1
+        if cnt:
+            out[i] = max(cnt, key=cnt.get)
     return out
 
 
+def ko_cid_map(matches, porras):
+    """match_id -> slot del cuadro, mapeado por EQUIPOS reales (no por fecha)."""
+    by_round = {}
+    for m in matches:
+        pfx = KO_MAP.get((m.get("round_name") or "").strip().lower())
+        if not pfx:
+            continue
+        h, a = match_team(m.get("home_team")), match_team(m.get("away_team"))
+        if h and a:  # equipos definidos (no plazas tipo W101)
+            by_round.setdefault(pfx, []).append((m, frozenset((h, a))))
+
+    cidof, winner = {}, {}
+
+    def assign(pfx, i, teams):
+        for m, mt in by_round.get(pfx, []):
+            if mt == teams and m["id"] not in cidof:
+                cidof[m["id"]] = pfx + str(i)
+                w = _match_winner(m)
+                if w:
+                    winner[pfx + str(i)] = w
+                return
+
+    for i, teams in _ref_r32(porras).items():       # dieciseisavos: por equipos
+        assign("c", i, teams)
+    for i, (a, b) in enumerate(R16_PAIRS):           # octavos -> final: por el árbol
+        wa, wb = winner.get("c" + str(a)), winner.get("c" + str(b))
+        if wa and wb:
+            assign("oct", i, frozenset((wa, wb)))
+    for i, (a, b) in enumerate(QF_PAIRS):
+        wa, wb = winner.get("oct" + str(a)), winner.get("oct" + str(b))
+        if wa and wb:
+            assign("qf", i, frozenset((wa, wb)))
+    for i, (a, b) in enumerate(SF_PAIRS):
+        wa, wb = winner.get("qf" + str(a)), winner.get("qf" + str(b))
+        if wa and wb:
+            assign("sf", i, frozenset((wa, wb)))
+    w0, w1 = winner.get("sf0"), winner.get("sf1")
+    if w0 and w1:
+        assign("fin2", 0, frozenset((w0, w1)))
+    losers = []                                       # 3er puesto: perdedores de semis
+    for sf in ("sf0", "sf1"):
+        w = winner.get(sf)
+        for m, mt in by_round.get("sf", []):
+            if cidof.get(m["id"]) == sf and w:
+                rest = [t for t in mt if t != w]
+                if rest:
+                    losers.append(rest[0])
+    if len(losers) == 2:
+        assign("p3f", 0, frozenset(losers))
+    return cidof
+
+
 def ko_real(matches, cidof):
-    """slot -> {winner: code, sh, sa} de los partidos de KO terminados (con prórroga/penaltis)."""
+    """slot -> {winner, sh, sa} de los partidos de KO terminados."""
     res = {}
     for m in matches:
         slot = cidof.get(m.get("id"))
@@ -909,16 +989,9 @@ def ko_real(matches, cidof):
         et = m.get("extra_time_score") or {}
         sh = et.get("home") if et.get("home") is not None else m.get("home_score")
         sa = et.get("away") if et.get("away") is not None else m.get("away_score")
-        home, away = match_team(m.get("home_team")), match_team(m.get("away_team"))
-        if sh is None or sa is None or not home or not away:
+        w = _match_winner(m)
+        if sh is None or sa is None or not w:
             continue
-        if sh > sa:
-            w = home
-        elif sa > sh:
-            w = away
-        else:
-            pen = m.get("penalty_shootout") or {}
-            w = home if (pen.get("home", 0) or 0) > (pen.get("away", 0) or 0) else away
         res[slot] = {"winner": w, "sh": sh, "sa": sa}
     return res
 
@@ -1025,7 +1098,7 @@ def check_matches(token, porras, state):
             relevant.append((m, home, away))
 
     # Eliminatoria: mapeo de cada partido a su slot del cuadro + resultados reales.
-    cidof = ko_cid_map(matches)
+    cidof = ko_cid_map(matches, porras)
     ko_res = ko_real(matches, cidof)
     relevant_ko = []
     for m in matches:
