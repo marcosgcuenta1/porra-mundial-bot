@@ -546,17 +546,8 @@ def cmd_miporra(token, cid, p, goals_map=None, porras=None):
         for k, h, a, slot in nxt:
             when = k.astimezone(ESP_TZ).strftime("%d/%m %H:%M")
             base = "{} · {} {} - {} {}".format(when, TEAMS[h][1], h, a, TEAMS[a][1])
-            if slot:  # KO: marcador exacto
-                pred = ko.get(slot)
-                if pred and pred.get("winner"):
-                    ph = match_team(pred.get("homeTeam"))
-                    if ph == a:  # bracket al revés que el partido real
-                        tu = "{}-{}".format(pred.get("scoreA"), pred.get("scoreH"))
-                    else:
-                        tu = "{}-{}".format(pred.get("scoreH"), pred.get("scoreA"))
-                else:
-                    tu = "—"
-                lines.append("{} → <b>{}</b>".format(base, tu))
+            if slot:  # KO: marcador exacto (con '*' en empate)
+                lines.append("{} → <b>{}</b>".format(base, _ko_pred_score(ko.get(slot), h, a)))
             else:  # grupos: ganador
                 lines.append("{} → <b>{}</b>".format(base, user_pick(gr, h, a) or "empate"))
     send(token, cid, "\n".join(lines))
@@ -607,12 +598,19 @@ def do_compare(token, cid, my_pid, text, porras, user):
 
 
 def _ko_pred_score(pred, h, a):
-    """Marcador exacto pronosticado para un cruce, orientado al partido real (h-a), o '—'."""
+    """Marcador pronosticado orientado al partido real (h-a). En empate, '*' en el lado
+    del ganador (pasa por penaltis). '—' si no hay predicción."""
     if not pred or not pred.get("winner"):
         return "—"
-    if match_team(pred.get("homeTeam")) == a:  # bracket al revés que el partido real
-        return "{}-{}".format(pred.get("scoreA"), pred.get("scoreH"))
-    return "{}-{}".format(pred.get("scoreH"), pred.get("scoreA"))
+    swap = match_team(pred.get("homeTeam")) == a  # bracket al revés que el partido real
+    sh, sa = (pred.get("scoreA"), pred.get("scoreH")) if swap else (pred.get("scoreH"), pred.get("scoreA"))
+    if sh == sa:
+        w = match_team(pred.get("winner"))
+        if w == h:
+            return "{}*-{}".format(sh, sa)
+        if w == a:
+            return "{}-{}*".format(sh, sa)
+    return "{}-{}".format(sh, sa)
 
 
 def do_compare_pid(token, cid, my_pid, other_pid, porras):
@@ -1045,9 +1043,14 @@ def _disp(name, flag_first=True):
 
 
 def _pred_line(pred):
+    sh, sa = pred.get("scoreH"), pred.get("scoreA")
+    if sh == sa:  # empate: '*' en el lado del ganador
+        if pred.get("winner") == pred.get("homeTeam"):
+            sh = "{}*".format(sh)
+        elif pred.get("winner") == pred.get("awayTeam"):
+            sa = "{}*".format(sa)
     return "Tu predicción: {} {}-{} {}".format(
-        _disp(pred.get("homeTeam"), True), pred.get("scoreH"), pred.get("scoreA"),
-        _disp(pred.get("awayTeam"), False))
+        _disp(pred.get("homeTeam"), True), sh, sa, _disp(pred.get("awayTeam"), False))
 
 
 def msg_comienzo_ko(home, away, pred):
