@@ -220,7 +220,7 @@ def fetch_porras():
     try:
         r = requests.get(
             SB_URL + "/rest/v1/porras",
-            params={"select": "id,nombre,apellidos,active,gr,mvp,gol1,gol1n,gol2,gol2n,camp,sub,p3,p4",
+            params={"select": "id,nombre,apellidos,active,gr,ko,mvp,gol1,gol1n,gol2,gol2n,camp,sub,p3,p4",
                     "order": "created_at.asc"},
             headers={"apikey": SB_KEY, "Authorization": "Bearer " + SB_KEY},
             timeout=30,
