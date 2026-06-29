@@ -245,6 +245,10 @@ def group_results(matches):
     for m in matches:
         if (m.get("status") or "").lower() not in FINISHED_ST:
             continue
+        # Saltar los partidos de eliminatoria (como la web: solo cuentan los de grupo, !cid).
+        # Si no, un reencuentro de dos equipos del mismo grupo en KO falsearía el grupo.
+        if KO_MAP.get((m.get("round_name") or "").strip().lower()):
+            continue
         home, away = match_team(m.get("home_team")), match_team(m.get("away_team"))
         gk = GROUP_KEYS.get(frozenset((home, away))) if home and away else None
         if not gk:
@@ -1103,45 +1107,130 @@ ROUND_LBL = {"c": "16avos", "oct": "Octavos", "qf": "Cuartos",
              "sf": "Semifinal", "p3f": "3.er puesto", "fin2": "Final"}
 
 
+# Mapeo de nombres de la API (inglés) a nuestros nombres (español). PORTADO TAL CUAL de la
+# web de César (su TEAM_MAP): el ranking del bot debe salir EXACTAMENTE como el de la web, y
+# para eso hay que comparar los equipos igual que ella (mismos nombres + matching difuso).
+TEAM_MAP_WEB = {
+    "Spain": "España", "France": "Francia", "Brazil": "Brasil", "Germany": "Alemania",
+    "Argentina": "Argentina", "Portugal": "Portugal", "Netherlands": "Holanda",
+    "England": "Inglaterra", "Belgium": "Bélgica", "Croatia": "Croacia",
+    "Morocco": "Marruecos", "Japan": "Japón", "South Korea": "Corea del Sur",
+    "Mexico": "México", "United States": "EE.UU.", "USA": "EE.UU.", "Canada": "Canadá",
+    "Uruguay": "Uruguay", "Ecuador": "Ecuador", "Colombia": "Colombia",
+    "Senegal": "Senegal", "Tunisia": "Túnez", "Sweden": "Suecia",
+    "Switzerland": "Suiza", "Denmark": "Dinamarca", "Austria": "Austria",
+    "Turkey": "Turquía", "Türkiye": "Turquía", "Australia": "Australia",
+    "Saudi Arabia": "Arabia Saudita", "Iraq": "Irak", "Norway": "Noruega",
+    "Algeria": "Argelia", "Jordan": "Jordania", "DR Congo": "Congo",
+    "Uzbekistan": "Uzbekistán", "Ghana": "Ghana", "Panama": "Panamá",
+    "Cape Verde": "Cabo Verde", "Cabo Verde": "Cabo Verde",
+    "South Africa": "Sudáfrica", "New Zealand": "N.Zelanda",
+    "Scotland": "Escocia", "Haiti": "Haití",
+    "Bosnia and Herzegovina": "Bosnia", "Bosnia & Herzegovina": "Bosnia",
+    "Qatar": "Qatar", "Curacao": "Curazao", "Curaçao": "Curazao",
+    "Ivory Coast": "C.Marfil", "Egypt": "Egipto", "Iran": "Irán",
+    "Paraguay": "Paraguay", "Czechia": "Chequia", "Czech Republic": "Chequia",
+    "Côte d'Ivoire": "C.Marfil",
+}
+
+
+def _map_team(name):
+    """API → nuestro nombre, como mapTeam de la web (si no está, devuelve el nombre tal cual)."""
+    return TEAM_MAP_WEB.get(name, name)
+
+
+def _normstr(s):
+    """Port de normStr de la web: minúsculas, sin tildes, espacios colapsados."""
+    s = unicodedata.normalize("NFD", (s or "").lower().strip())
+    s = "".join(c for c in s if unicodedata.category(c) != "Mn")
+    return " ".join(s.split())
+
+
+def _names_match(a, b):
+    """Port de namesMatch de la web: igualdad o subcadena (difuso). Esto hace que un hueco
+    sin rellenar tipo 'Ganador X/Y' cuente para el equipo (X o Y) que realmente gana."""
+    if not a or not b:
+        return False
+    na = re.sub(r"\bjr\b", "junior", _normstr(a)).strip()
+    nb = re.sub(r"\bjr\b", "junior", _normstr(b)).strip()
+    return na == nb or na in nb or nb in na
+
+
+def _int(x):
+    try:
+        return int(x)
+    except (TypeError, ValueError):
+        return None
+
+
 def ko_results_list(matches):
-    """Lista de partidos de KO terminados: {pfx, home, away, winner, sh, sa} (en código).
-    Esta lista es la base para puntuar y para los avisos: igual que la web, de octavos en
-    adelante lo que cuenta es qué EQUIPO gana cada ronda, no el cruce que cada uno predijo."""
+    """Lista de partidos de KO terminados, con los nombres en ESPAÑOL (como la web) y también
+    el código de 3 letras (para los avisos). Base para puntuar y para los mensajes."""
     out = []
     for m in matches:
         pfx = KO_MAP.get((m.get("round_name") or "").strip().lower())
         if not pfx:
             continue
-        w = _match_winner(m)  # None si no ha terminado
-        if not w:
+        if (m.get("status") or "").lower() not in FINISHED_ST:
             continue
-        h, a = match_team(m.get("home_team")), match_team(m.get("away_team"))
-        if not (h and a):
-            continue
+        home, away = _map_team(m.get("home_team")), _map_team(m.get("away_team"))
         et = m.get("extra_time_score") or {}
         sh = et.get("home") if et.get("home") is not None else m.get("home_score")
         sa = et.get("away") if et.get("away") is not None else m.get("away_score")
-        if sh is None or sa is None:
-            continue
-        out.append({"pfx": pfx, "home": h, "away": a, "winner": w, "sh": sh, "sa": sa})
+        sh, sa = sh or 0, sa or 0
+        if sh > sa:
+            winner = home
+        elif sa > sh:
+            winner = away
+        else:
+            ps = m.get("penalty_shootout") or {}
+            if not ps:
+                continue
+            winner = home if (ps.get("home", 0) or 0) > (ps.get("away", 0) or 0) else away
+        out.append({"pfx": pfx, "home": home, "away": away, "winner": winner, "sh": sh, "sa": sa,
+                    "home_c": match_team(home), "away_c": match_team(away),
+                    "winner_c": match_team(winner)})
     return out
 
 
+def _same_ko_game(r, pred):
+    """Port de sameKOGame: el cruce real y el predicho son el mismo (en cualquier orden)."""
+    rh, ra, ph, pa = r.get("home"), r.get("away"), pred.get("homeTeam"), pred.get("awayTeam")
+    if not (rh and ra and ph and pa):
+        return False
+    return (_names_match(rh, ph) and _names_match(ra, pa)) \
+        or (_names_match(rh, pa) and _names_match(ra, ph))
+
+
+def _find_real_ko(pfx, pred, ko_list):
+    """Port de findRealKOForPrediction: 16avos por cruce (equipos), octavos+ por equipo ganador."""
+    if not pred or not pred.get("winner"):
+        return None
+    if pfx == "c":
+        for r in ko_list:
+            if r["pfx"] == "c" and _same_ko_game(r, pred):
+                return r
+        return None
+    for r in ko_list:
+        if r["pfx"] == pfx and _names_match(r["winner"], pred["winner"]):
+            return r
+    return None
+
+
 def ko_team_outcome(pfx, team, ko_list):
-    """('win'|'loss'|None, partido) del 'team' en la ronda 'pfx' según los resultados reales.
-    'win' si ganó su partido de esa ronda; 'loss' si lo jugó y cayó; None si no lo jugó."""
+    """('win'|'loss'|None, partido) del 'team' (código) en la ronda 'pfx'. Solo para los avisos."""
     for r in (ko_list or []):
         if r["pfx"] != pfx:
             continue
-        if r["winner"] == team:
+        if r.get("winner_c") == team:
             return ("win", r)
-        if team in (r["home"], r["away"]):
+        if team in (r.get("home_c"), r.get("away_c")):
             return ("loss", r)
     return (None, None)
 
 
 def ko_user_pick(ko, pfx, team):
-    """La predicción de la porra para la ronda 'pfx' cuyo ganador es 'team' (None si no)."""
+    """La predicción de la porra para la ronda 'pfx' cuyo ganador es 'team' (código). Avisos."""
     for slot, pred in (ko or {}).items():
         if ko_pfx(slot) == pfx and pred and pred.get("winner") \
                 and match_team(pred.get("winner")) == team:
@@ -1150,23 +1239,24 @@ def ko_user_pick(ko, pfx, team):
 
 
 def ko_points(ko_pred, ko_list):
-    """Puntos de eliminatoria de una porra. Como la web: por EQUIPO que pasa cada ronda
-    (no por posición del cuadro). El bonus de marcador se compara en crudo (web)."""
+    """Puntos de eliminatoria. PORT EXACTO de calcPuntos de la web: busca el partido real con
+    findRealKOForPrediction y casa el ganador con namesMatch (difuso); bonus de marcador en
+    crudo. El ranking sale igual que la web, incluido el matching de huecos sin rellenar."""
     pts = 0
     for slot, pred in (ko_pred or {}).items():
-        if not pred or not pred.get("winner"):
+        if not pred or not pred.get("winner") or pred.get("lateNoScore"):
             continue
         pfx = ko_pfx(slot)
         if pfx not in KO_PTS:
             continue
-        team = match_team(pred.get("winner"))
-        if not team:
+        real = _find_real_ko(pfx, pred, ko_list)
+        if not real or not real.get("winner"):
             continue
-        outcome, r = ko_team_outcome(pfx, team, ko_list)
-        if outcome == "win":
-            team_pts, score_pts = KO_PTS[pfx]
+        team_pts, score_pts = KO_PTS[pfx]
+        if _names_match(real["winner"], pred["winner"]):
             pts += team_pts
-            if pred.get("scoreH") == r["sh"] and pred.get("scoreA") == r["sa"]:
+            ph, pa = _int(pred.get("scoreH")), _int(pred.get("scoreA"))
+            if ph is not None and pa is not None and _int(real["sh"]) == ph and _int(real["sa"]) == pa:
                 pts += score_pts
     return pts
 
