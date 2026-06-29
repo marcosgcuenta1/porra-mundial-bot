@@ -881,8 +881,10 @@ def confirmed_users(state, porras_by_pid):
 KO_MAP = {"round of 32": "c", "round of 16": "oct", "quarterfinals": "qf",
           "quarter-finals": "qf", "semifinals": "sf", "semi-finals": "sf",
           "final": "fin2", "match for 3rd place": "p3f", "3rd place final": "p3f"}
-# Puntos por ronda: (acierto ganador, bonus marcador exacto). p3f NO puntúa (replica la web).
-KO_PTS = {"c": (5, 5), "oct": (10, 10), "qf": (15, 15), "sf": (25, 20), "fin2": (50, 30)}
+# Puntos por ronda: (acierto ganador, bonus marcador exacto). Replica la web de César
+# (KO_PTS en su HTML): el 3er puesto p3f SÍ puntúa desde que reescribió calcPuntos.
+KO_PTS = {"c": (5, 5), "oct": (10, 10), "qf": (15, 15), "sf": (20, 20),
+          "p3f": (25, 25), "fin2": (30, 30)}
 
 
 R16_PAIRS = [(0, 1), (2, 3), (4, 5), (6, 7), (8, 9), (10, 11), (12, 13), (14, 15)]
@@ -995,7 +997,7 @@ def ko_real(matches, cidof):
 
 
 def ko_pfx(cid):
-    for p in ("fin2", "sf", "qf", "oct", "c"):
+    for p in ("fin2", "p3f", "sf", "qf", "oct", "c"):
         if cid.startswith(p):
             return p
     return None
