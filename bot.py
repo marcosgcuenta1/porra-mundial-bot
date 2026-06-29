@@ -120,6 +120,7 @@ def load_state():
     st.setdefault("comienzo", [])
     st.setdefault("final", [])
     st.setdefault("seeded", False)
+    st.setdefault("seeded_ko", False)
     st.setdefault("tg_offset", 0)
     st.setdefault("scorers", {"events": [], "goals": {}, "ts": None})
     # Migración del antiguo formato de un solo usuario.
@@ -257,13 +258,15 @@ def group_results(matches):
     return res
 
 
-def ranking(porras, results):
+def ranking(porras, results, ko_res=None):
     rows = []
     for p in porras:
         if not p.get("active"):
             continue
         gr = p.get("gr") or {}
         pts = 3 * sum(1 for k, real in results.items() if gr.get(k) == real)
+        if ko_res:
+            pts += ko_points(p.get("ko"), ko_res)
         rows.append([p["id"], display_name(p.get("nombre"), p.get("apellidos")), pts])
     # Cláusula de la porra: Iván Gómez Peral queda por delante en caso de empate a puntos.
     rows.sort(key=lambda x: (-x[2], 0 if normalize(x[1]) == "ivangomezperal" else 1))
@@ -278,10 +281,10 @@ def rank_line(i, name, pts, is_me):
     return "<b>{}</b>".format(line) if (i < 3 or is_me) else line
 
 
-def ranking_block(porras, results, my_pid):
+def ranking_block(porras, results, my_pid, ko_res=None):
     if my_pid is None:
         return ""
-    rk = ranking(porras, results)
+    rk = ranking(porras, results, ko_res)
     idx = next((i for i, r in enumerate(rk) if r[0] == my_pid), None)
     if idx is None:
         return ""
@@ -422,13 +425,16 @@ BOT_COMMANDS = [
 
 
 def cmd_ranking(token, cid, pid, porras):
-    results = group_results(fetch_matches())
-    blk = ranking_block(porras, results, pid)
+    matches = fetch_matches()
+    results = group_results(matches)
+    ko_res = ko_real(matches, ko_cid_map(matches))
+    blk = ranking_block(porras, results, pid, ko_res)
     send(token, cid, blk or "Aún no estás en la clasificación (o no hay resultados todavía).")
 
 
 def cmd_ranking_full(token, cid, pid, porras):
-    rk = ranking(porras, group_results(fetch_matches()))
+    matches = fetch_matches()
+    rk = ranking(porras, group_results(matches), ko_real(matches, ko_cid_map(matches)))
     if not rk:
         send(token, cid, "Aún no hay clasificación.")
         return
@@ -837,6 +843,138 @@ def confirmed_users(state, porras_by_pid):
     return out
 
 
+# --------------------------------------------------------------------------- #
+# Fase eliminatoria
+# --------------------------------------------------------------------------- #
+KO_MAP = {"round of 32": "c", "round of 16": "oct", "quarterfinals": "qf",
+          "quarter-finals": "qf", "semifinals": "sf", "semi-finals": "sf",
+          "final": "fin2", "match for 3rd place": "p3f", "3rd place final": "p3f"}
+# Puntos por ronda: (acierto ganador, bonus marcador exacto). p3f NO puntúa (replica la web).
+KO_PTS = {"c": (5, 5), "oct": (10, 10), "qf": (15, 15), "sf": (25, 20), "fin2": (50, 30)}
+
+
+def ko_cid_map(matches):
+    """match_id -> slot (c0, oct0, qf0...): por ronda, ordenado por fecha (como la web)."""
+    ko = [m for m in matches if (m.get("round_name") or "").strip().lower() in KO_MAP]
+    ko.sort(key=lambda m: m.get("event_date") or "")
+    n, out = {}, {}
+    for m in ko:
+        pfx = KO_MAP[(m.get("round_name") or "").strip().lower()]
+        out[m["id"]] = pfx + str(n.get(pfx, 0))
+        n[pfx] = n.get(pfx, 0) + 1
+    return out
+
+
+def ko_real(matches, cidof):
+    """slot -> {winner: code, sh, sa} de los partidos de KO terminados (con prórroga/penaltis)."""
+    res = {}
+    for m in matches:
+        slot = cidof.get(m.get("id"))
+        if not slot or (m.get("status") or "").lower() not in FINISHED_ST:
+            continue
+        et = m.get("extra_time_score") or {}
+        sh = et.get("home") if et.get("home") is not None else m.get("home_score")
+        sa = et.get("away") if et.get("away") is not None else m.get("away_score")
+        home, away = match_team(m.get("home_team")), match_team(m.get("away_team"))
+        if sh is None or sa is None or not home or not away:
+            continue
+        if sh > sa:
+            w = home
+        elif sa > sh:
+            w = away
+        else:
+            pen = m.get("penalty_shootout") or {}
+            w = home if (pen.get("home", 0) or 0) > (pen.get("away", 0) or 0) else away
+        res[slot] = {"winner": w, "sh": sh, "sa": sa}
+    return res
+
+
+def ko_pfx(cid):
+    for p in ("fin2", "sf", "qf", "oct", "c"):
+        if cid.startswith(p):
+            return p
+    return None
+
+
+def ko_points(ko_pred, ko_res):
+    """Puntos de eliminatoria de una porra."""
+    pts = 0
+    for slot, pred in (ko_pred or {}).items():
+        if not pred or not pred.get("winner"):
+            continue
+        real = ko_res.get(slot)
+        if not real or not real.get("winner"):
+            continue
+        pfx = ko_pfx(slot)
+        if pfx not in KO_PTS:
+            continue
+        team_pts, score_pts = KO_PTS[pfx]
+        if match_team(pred["winner"]) == real["winner"]:
+            pts += team_pts
+            if pred.get("scoreH") == real["sh"] and pred.get("scoreA") == real["sa"]:
+                pts += score_pts
+    return pts
+
+
+def ko_pcts(porras, slot, real):
+    """(% acertó ganador, % acertó marcador exacto) entre quienes predijeron ese cruce."""
+    preds = [pr for p in porras if p.get("active")
+             for pr in [(p.get("ko") or {}).get(slot)]
+             if pr and pr.get("winner") and match_team(pr["winner"])]
+    n = len(preds)
+    if not n:
+        return (0, 0)
+    g = sum(1 for pr in preds if match_team(pr["winner"]) == real["winner"])
+    e = sum(1 for pr in preds if match_team(pr["winner"]) == real["winner"]
+            and pr.get("scoreH") == real["sh"] and pr.get("scoreA") == real["sa"])
+    return (round(100 * g / n), round(100 * e / n))
+
+
+def _disp(name, flag_first=True):
+    c = match_team(name)
+    if not c:
+        return name  # placeholder tipo "Ganador X/Y"
+    return "{} {}".format(TEAMS[c][1], c) if flag_first else "{} {}".format(c, TEAMS[c][1])
+
+
+def _pred_line(pred):
+    return "Tu predicción: {} {}-{} {}".format(
+        _disp(pred.get("homeTeam"), True), pred.get("scoreH"), pred.get("scoreA"),
+        _disp(pred.get("awayTeam"), False))
+
+
+def msg_comienzo_ko(home, away, pred):
+    l1 = "Comienzo de {} {} - {} {}".format(TEAMS[home][1], home, away, TEAMS[away][1])
+    if pred and pred.get("winner"):
+        return l1 + "\n" + _pred_line(pred)
+    return l1 + "\nTu predicción: —"
+
+
+def ko_stats_line(g, e):
+    if g == 0:
+        return "Nadie ha acertado nada"
+    if e == 0:
+        return "El {}% ha acertado el ganador y nadie el exacto".format(g)
+    return "El {}% ha acertado el ganador y el {}% el exacto".format(g, e)
+
+
+def msg_final_ko(home, away, real, pred, g, e, ranking_txt=""):
+    sh, sa, rw = real["sh"], real["sa"], real["winner"]
+    pw = match_team(pred.get("winner")) if (pred and pred.get("winner")) else None
+    acierto = pw is not None and pw == rw
+    exacto = acierto and pred.get("scoreH") == sh and pred.get("scoreA") == sa
+    pen = " (pen.)" if sh == sa and rw else ""
+    out = "{} Final: {} {} {}-{} {} {}{}".format(
+        "✅" if acierto else "❌", TEAMS[home][1], home, sh, sa, away, TEAMS[away][1], pen)
+    if exacto:
+        out += "\n🎯 ¡Resultado exacto!"
+    out += "\n" + (_pred_line(pred) if pred and pred.get("winner") else "Tu predicción: —")
+    out += "\n" + ko_stats_line(g, e)
+    if ranking_txt:
+        out += "\n\n━━━━━━━━━━━━━━━━\n\n" + ranking_txt
+    return out
+
+
 def check_matches(token, porras, state):
     """Mira los partidos y envía comienzos/finales nuevos a todos los identificados."""
     porras_by_pid = {p["id"]: p for p in porras}
@@ -850,19 +988,41 @@ def check_matches(token, porras, state):
         if home and away and frozenset((home, away)) in GROUP_KEYS:
             relevant.append((m, home, away))
 
-    # Primera ejecución: marcar lo ya jugado como avisado (sin spamear el historial).
-    if not state["seeded"]:
-        for m, home, away in relevant:
-            st = (m.get("status") or "").lower()
+    # Eliminatoria: mapeo de cada partido a su slot del cuadro + resultados reales.
+    cidof = ko_cid_map(matches)
+    ko_res = ko_real(matches, cidof)
+    relevant_ko = []
+    for m in matches:
+        slot = cidof.get(m.get("id"))
+        home, away = match_team(m.get("home_team")), match_team(m.get("away_team"))
+        if slot and home and away:
+            relevant_ko.append((m, home, away, slot))
+
+    def _seed(items):
+        for it in items:
+            m, st = it[0], (it[0].get("status") or "").lower()
             if st in LIVE_ST or st in FINISHED_ST:
                 state["comienzo"].append(m["id"])
             if st in FINISHED_ST:
                 state["final"].append(m["id"])
+
+    # Primera ejecución: marcar lo ya jugado como avisado (sin spamear el historial).
+    if not state["seeded"]:
+        _seed(relevant)
+        _seed(relevant_ko)
         state["seeded"] = True
+        state["seeded_ko"] = True
         persist(state, force=True)
         print("Estado inicializado: {} comienzos y {} finales ya marcados.".format(
             len(state["comienzo"]), len(state["final"])))
         return 0
+
+    # Sembrado puntual de eliminatoria (para el bot que ya estaba sembrado de grupos).
+    if not state.get("seeded_ko"):
+        _seed(relevant_ko)
+        state["seeded_ko"] = True
+        persist(state, force=True)
+        print("Eliminatoria sembrada: {} partidos de KO marcados.".format(len(relevant_ko)))
 
     comienzo_set = set(state["comienzo"])
     final_set = set(state["final"])
@@ -901,8 +1061,43 @@ def check_matches(token, porras, state):
             cheer = PHRASES_ESP[int(mid) % len(PHRASES_ESP)] if real == "ESP" else None
             for cid, u in users:
                 pick = user_pick(porras_by_pid[u["pid"]].get("gr"), home, away)
-                rk = ranking_block(porras, results, u["pid"])
+                rk = ranking_block(porras, results, u["pid"], ko_res)
                 if send(token, cid, msg_final(home, away, pick, gh, ga, real == pick, rk, pct, cheer)):
+                    enviados += 1
+            final_set.add(mid)
+            state["final"].append(mid)
+            persist(state, force=True)
+
+    # ── Eliminatoria ──
+    for m, home, away, slot in relevant_ko:
+        mid = m["id"]
+        st = (m.get("status") or "").lower()
+        kickoff = parse_dt(m.get("event_date"))
+        ya_empezado = st in LIVE_ST or st in FINISHED_ST
+        toca_comienzo = ya_empezado or (kickoff is not None and now >= kickoff)
+        if kickoff is not None and (now - kickoff).total_seconds() > COMIENZO_MAX_RETRASO_H * 3600:
+            demasiado_tarde = st not in LIVE_ST
+        else:
+            demasiado_tarde = False
+
+        if mid not in comienzo_set and toca_comienzo and not demasiado_tarde:
+            for chat, u in users:
+                pred = (porras_by_pid[u["pid"]].get("ko") or {}).get(slot)
+                if send(token, chat, msg_comienzo_ko(home, away, pred)):
+                    enviados += 1
+            comienzo_set.add(mid)
+            state["comienzo"].append(mid)
+            persist(state, force=True)
+
+        if st in FINISHED_ST and mid not in final_set:
+            real = ko_res.get(slot)
+            if not real or not real.get("winner"):
+                continue
+            g, e = ko_pcts(porras, slot, real)
+            for chat, u in users:
+                pred = (porras_by_pid[u["pid"]].get("ko") or {}).get(slot)
+                rk = ranking_block(porras, results, u["pid"], ko_res)
+                if send(token, chat, msg_final_ko(home, away, real, pred, g, e, rk)):
                     enviados += 1
             final_set.add(mid)
             state["final"].append(mid)
