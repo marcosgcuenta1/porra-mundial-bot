@@ -258,15 +258,15 @@ def group_results(matches):
     return res
 
 
-def ranking(porras, results, ko_res=None):
+def ranking(porras, results, ko_list=None):
     rows = []
     for p in porras:
         if not p.get("active"):
             continue
         gr = p.get("gr") or {}
         pts = 3 * sum(1 for k, real in results.items() if gr.get(k) == real)
-        if ko_res:
-            pts += ko_points(p.get("ko"), ko_res)
+        if ko_list:
+            pts += ko_points(p.get("ko"), ko_list)
         rows.append([p["id"], display_name(p.get("nombre"), p.get("apellidos")), pts])
     # Cláusula de la porra: Iván Gómez Peral queda por delante en caso de empate a puntos.
     rows.sort(key=lambda x: (-x[2], 0 if normalize(x[1]) == "ivangomezperal" else 1))
@@ -283,10 +283,10 @@ def rank_line(i, name, pts, is_me):
     return "<b>{}</b>".format(line) if i < 3 else line
 
 
-def ranking_block(porras, results, my_pid, ko_res=None):
+def ranking_block(porras, results, my_pid, ko_list=None):
     if my_pid is None:
         return ""
-    rk = ranking(porras, results, ko_res)
+    rk = ranking(porras, results, ko_list)
     idx = next((i for i, r in enumerate(rk) if r[0] == my_pid), None)
     if idx is None:
         return ""
@@ -429,14 +429,14 @@ BOT_COMMANDS = [
 def cmd_ranking(token, cid, pid, porras):
     matches = fetch_matches()
     results = group_results(matches)
-    ko_res = ko_real(matches, ko_cid_map(matches, porras))
-    blk = ranking_block(porras, results, pid, ko_res)
+    ko_list = ko_results_list(matches)
+    blk = ranking_block(porras, results, pid, ko_list)
     send(token, cid, blk or "Aún no estás en la clasificación (o no hay resultados todavía).")
 
 
 def cmd_ranking_full(token, cid, pid, porras):
     matches = fetch_matches()
-    rk = ranking(porras, group_results(matches), ko_real(matches, ko_cid_map(matches, porras)))
+    rk = ranking(porras, group_results(matches), ko_results_list(matches))
     if not rk:
         send(token, cid, "Aún no hay clasificación.")
         return
@@ -538,10 +538,16 @@ def cmd_miporra(token, cid, p, goals_map=None, porras=None):
         if p.get(campo):
             lines.append("{}: {}".format(etq, p[campo]))
 
-    brk = bracket_block(p.get("ko"))
+    try:
+        ko_list = ko_results_list(fetch_matches())
+    except Exception:
+        ko_list = None
+    brk = bracket_block(p.get("ko"), ko_list)
     if brk:
-        lines.append("\n🗺️ <b>Tu bracket completo</b> (tu pronóstico):")
+        lines.append("\n🗺️ <b>Tu bracket</b> (de octavos, el equipo que pasa según tú):")
         lines.extend(brk)
+        if ko_list:
+            lines.append("\n✅ acertado · 🎯 con marcador exacto · ❌ eliminado")
     send(token, cid, "\n".join(lines))
 
 
@@ -626,8 +632,23 @@ def _ko_own_score(s):
     return "{}-{}".format(sh, sa)
 
 
-def bracket_block(ko):
-    """Pinta el bracket completo de una porra (todas las rondas) agrupado por ronda."""
+def _ko_reality_mark(pfx, team, pred, ko_list):
+    """' ✅'/' 🎯'/' ❌'/'' según si 'team' ganó/cayó en su partido real de esa ronda."""
+    if ko_list is None or not team:
+        return ""
+    outcome, r = ko_team_outcome(pfx, team, ko_list)
+    if outcome == "win":
+        exact = r and pred.get("scoreH") == r["sh"] and pred.get("scoreA") == r["sa"]
+        return " 🎯" if exact else " ✅"
+    if outcome == "loss":
+        return " ❌"
+    return ""
+
+
+def bracket_block(ko, ko_list=None):
+    """Pinta el bracket de una porra agrupado por ronda. En 16avos (cruces fijos) muestra el
+    cruce; de octavos en adelante muestra el EQUIPO que pasa según el usuario (el rival real
+    puede no coincidir). Si se pasa ko_list, marca ✅/🎯/❌ según los resultados reales."""
     ko = ko or {}
     lines = []
     for label, pfx, n in KO_ROUNDS:
@@ -637,10 +658,29 @@ def bracket_block(ko):
             continue
         lines.append("\n<b>{}</b>".format(label))
         for s in slots:
-            fh, ch = _ko_flag(s.get("homeTeam"))
-            fa, ca = _ko_flag(s.get("awayTeam"))
-            lines.append("{} {} {} {} {}".format(fh, ch, _ko_own_score(s), ca, fa))
+            w = match_team(s.get("winner"))
+            mark = _ko_reality_mark(pfx, w, s, ko_list)
+            if pfx == "c":   # 16avos: cruce fijo, se muestra el partido
+                fh, ch = _ko_flag(s.get("homeTeam"))
+                fa, ca = _ko_flag(s.get("awayTeam"))
+                lines.append("{} {} {} {} {}{}".format(fh, ch, _ko_own_score(s), ca, fa, mark))
+            else:            # octavos+: el equipo que pasa según el usuario + su marcador
+                fw = TEAMS.get(w, (None, ""))[1] if w else ""
+                lines.append("{} {} ({}){}".format(fw, w or s.get("winner"),
+                                                    _ko_team_score(s, w), mark))
     return lines
+
+
+def _round_winner_codes(ko, pfx, n):
+    """Equipos (código) que una porra cree que pasan en la ronda 'pfx', por orden de slot."""
+    out = []
+    for i in range(n):
+        pr = (ko or {}).get(pfx + str(i))
+        if pr and pr.get("winner"):
+            c = match_team(pr.get("winner"))
+            if c and c not in out:
+                out.append(c)
+    return out
 
 
 def do_compare_pid(token, cid, my_pid, other_pid, porras):
@@ -654,16 +694,42 @@ def do_compare_pid(token, cid, my_pid, other_pid, porras):
     my_ko, their_ko = me.get("ko") or {}, other.get("ko") or {}
     lines = ["<b>TU PREDICCIÓN vs {}</b>".format(other_name.upper()),
              "━━━━━━━━━━━━━━━━"]
+    # Próximos partidos con cruce fijo (16avos / grupos): marcador vs marcador.
     for k, h, a, slot in next_matches(None, porras):
-        if slot:  # KO: marcador exacto
+        pfx = ko_pfx(slot) if slot else None
+        if pfx and pfx != "c":
+            continue  # octavos+ se comparan por ronda más abajo (el cruce no coincide)
+        if slot:
             mp = _ko_pred_score(my_ko.get(slot), h, a)
             tp = _ko_pred_score(their_ko.get(slot), h, a)
-        else:      # grupos: ganador
+        else:
             mp = user_pick(my_gr, h, a) or "X"
             tp = user_pick(their_gr, h, a) or "X"
         row = "{} {}-{} {} → {} / {}".format(TEAMS[h][1], h, a, TEAMS[a][1], mp, tp)
         lines.append("<b>{}</b>".format(row) if mp != tp else row)
-    lines.append("\n<i>tú / {}  ·  en negrita, donde discrepáis</i>".format(other_name))
+
+    # De octavos en adelante el cruce no coincide: se comparan los EQUIPOS que cada uno
+    # cree que pasan en cada ronda.
+    def _flags(codes):
+        return " ".join("{} {}".format(TEAMS.get(c, (None, ""))[1], c) for c in codes) or "—"
+    for label, pfx, n in KO_ROUNDS:
+        if pfx == "c":
+            continue
+        mine = _round_winner_codes(my_ko, pfx, n)
+        theirs = _round_winner_codes(their_ko, pfx, n)
+        if not mine and not theirs:
+            continue
+        coin = [c for c in mine if c in theirs]
+        only_me = [c for c in mine if c not in theirs]
+        only_th = [c for c in theirs if c not in mine]
+        lines.append("\n<b>{}</b> · quién pasa".format(label))
+        if coin:
+            lines.append("🤝 ambos: " + _flags(coin))
+        if only_me:
+            lines.append("🔵 solo tú: " + _flags(only_me))
+        if only_th:
+            lines.append("🔴 solo {}: {}".format(other_name, _flags(only_th)))
+    lines.append("\n<i>tú / {}  ·  en 16avos, en negrita donde discrepáis</i>".format(other_name))
     send(token, cid, "\n".join(lines))
 
 
@@ -1033,22 +1099,74 @@ def ko_pfx(cid):
     return None
 
 
-def ko_points(ko_pred, ko_res):
-    """Puntos de eliminatoria de una porra."""
+ROUND_LBL = {"c": "16avos", "oct": "Octavos", "qf": "Cuartos",
+             "sf": "Semifinal", "p3f": "3.er puesto", "fin2": "Final"}
+
+
+def ko_results_list(matches):
+    """Lista de partidos de KO terminados: {pfx, home, away, winner, sh, sa} (en código).
+    Esta lista es la base para puntuar y para los avisos: igual que la web, de octavos en
+    adelante lo que cuenta es qué EQUIPO gana cada ronda, no el cruce que cada uno predijo."""
+    out = []
+    for m in matches:
+        pfx = KO_MAP.get((m.get("round_name") or "").strip().lower())
+        if not pfx:
+            continue
+        w = _match_winner(m)  # None si no ha terminado
+        if not w:
+            continue
+        h, a = match_team(m.get("home_team")), match_team(m.get("away_team"))
+        if not (h and a):
+            continue
+        et = m.get("extra_time_score") or {}
+        sh = et.get("home") if et.get("home") is not None else m.get("home_score")
+        sa = et.get("away") if et.get("away") is not None else m.get("away_score")
+        if sh is None or sa is None:
+            continue
+        out.append({"pfx": pfx, "home": h, "away": a, "winner": w, "sh": sh, "sa": sa})
+    return out
+
+
+def ko_team_outcome(pfx, team, ko_list):
+    """('win'|'loss'|None, partido) del 'team' en la ronda 'pfx' según los resultados reales.
+    'win' si ganó su partido de esa ronda; 'loss' si lo jugó y cayó; None si no lo jugó."""
+    for r in (ko_list or []):
+        if r["pfx"] != pfx:
+            continue
+        if r["winner"] == team:
+            return ("win", r)
+        if team in (r["home"], r["away"]):
+            return ("loss", r)
+    return (None, None)
+
+
+def ko_user_pick(ko, pfx, team):
+    """La predicción de la porra para la ronda 'pfx' cuyo ganador es 'team' (None si no)."""
+    for slot, pred in (ko or {}).items():
+        if ko_pfx(slot) == pfx and pred and pred.get("winner") \
+                and match_team(pred.get("winner")) == team:
+            return pred
+    return None
+
+
+def ko_points(ko_pred, ko_list):
+    """Puntos de eliminatoria de una porra. Como la web: por EQUIPO que pasa cada ronda
+    (no por posición del cuadro). El bonus de marcador se compara en crudo (web)."""
     pts = 0
     for slot, pred in (ko_pred or {}).items():
         if not pred or not pred.get("winner"):
             continue
-        real = ko_res.get(slot)
-        if not real or not real.get("winner"):
-            continue
         pfx = ko_pfx(slot)
         if pfx not in KO_PTS:
             continue
-        team_pts, score_pts = KO_PTS[pfx]
-        if match_team(pred["winner"]) == real["winner"]:
+        team = match_team(pred.get("winner"))
+        if not team:
+            continue
+        outcome, r = ko_team_outcome(pfx, team, ko_list)
+        if outcome == "win":
+            team_pts, score_pts = KO_PTS[pfx]
             pts += team_pts
-            if pred.get("scoreH") == real["sh"] and pred.get("scoreA") == real["sa"]:
+            if pred.get("scoreH") == r["sh"] and pred.get("scoreA") == r["sa"]:
                 pts += score_pts
     return pts
 
@@ -1064,6 +1182,29 @@ def ko_pcts(porras, slot, real):
     g = sum(1 for pr in preds if match_team(pr["winner"]) == real["winner"])
     e = sum(1 for pr in preds if match_team(pr["winner"]) == real["winner"]
             and pr.get("scoreH") == real["sh"] and pr.get("scoreA") == real["sa"])
+    return (round(100 * g / n), round(100 * e / n))
+
+
+def ko_pcts_adv(porras, pfx, winner_team, sh, sa):
+    """Octavos+: (% que tenía a 'winner_team' como que pasa esa ronda, % con marcador exacto),
+    entre los activos que hicieron alguna predicción de esa ronda."""
+    voters = []
+    for p in porras:
+        if not p.get("active"):
+            continue
+        ko = p.get("ko") or {}
+        if any(ko_pfx(s) == pfx and (pr or {}).get("winner") for s, pr in ko.items()):
+            voters.append(ko)
+    n = len(voters)
+    if not n:
+        return (0, 0)
+    g = e = 0
+    for ko in voters:
+        pk = ko_user_pick(ko, pfx, winner_team)
+        if pk:
+            g += 1
+            if pk.get("scoreH") == sh and pk.get("scoreA") == sa:
+                e += 1
     return (round(100 * g / n), round(100 * e / n))
 
 
@@ -1094,7 +1235,7 @@ def msg_comienzo_ko(home, away, pred):
 
 def ko_stats_line(g, e):
     if g == 0:
-        return "Nadie ha acertado nada"
+        return "No ha acertado NADIE"
     if e == 0:
         return "El {}% ha acertado el ganador y nadie el exacto".format(g)
     return "El {}% ha acertado el ganador y el {}% el exacto".format(g, e)
@@ -1119,6 +1260,63 @@ def msg_final_ko(home, away, real, pred, g, e, ranking_txt="", cheer=None):
     return out
 
 
+def _ko_team_score(pred, team):
+    """Marcador pronosticado con los goles de 'team' primero (X-Y), para mostrarlo."""
+    sh, sa = pred.get("scoreH"), pred.get("scoreA")
+    if match_team(pred.get("homeTeam")) == team:
+        return "{}-{}".format(sh, sa)
+    return "{}-{}".format(sa, sh)
+
+
+def msg_comienzo_ko_adv(home, away, lbl, home_pick, away_pick):
+    """Comienzo de un partido de octavos+. El cruce real puede no coincidir con la porra,
+    así que se habla de qué EQUIPO de los dos pusiste tú como que pasa esta ronda."""
+    l1 = "Comienzo de {} {} - {} {} · {}".format(
+        TEAMS[home][1], home, away, TEAMS[away][1], lbl)
+    if home_pick and away_pick:
+        body = ("Tienes a {} {} y a {} {} como clasificados de esta ronda; aquí se eliminan "
+                "entre ellos, solo puntuará el que gane.").format(
+                    TEAMS[home][1], home, TEAMS[away][1], away)
+    elif home_pick:
+        body = "Pusiste que pasa {} {} (tu marcador {}). Necesitas que gane.".format(
+            TEAMS[home][1], home, _ko_team_score(home_pick, home))
+    elif away_pick:
+        body = "Pusiste que pasa {} {} (tu marcador {}). Necesitas que gane.".format(
+            TEAMS[away][1], away, _ko_team_score(away_pick, away))
+    else:
+        body = "De esta ronda no tienes a ninguno de estos dos como clasificado."
+    return l1 + "\n" + body
+
+
+def msg_final_ko_adv(home, away, real, lbl, home_pick, away_pick, g, e,
+                     ranking_txt="", cheer=None):
+    """Final de un partido de octavos+. Acierto = tenías al ganador como que pasa la ronda."""
+    sh, sa, rw = real["sh"], real["sa"], real["winner"]
+    win_pick = home_pick if rw == home else (away_pick if rw == away else None)
+    lose_pick = away_pick if rw == home else (home_pick if rw == away else None)
+    acierto = win_pick is not None
+    exacto = acierto and win_pick.get("scoreH") == sh and win_pick.get("scoreA") == sa
+    pen = " (pen.)" if sh == sa and rw else ""
+    icon = "✅" if acierto else ("❌" if lose_pick else "ℹ️")
+    out = "{} {}: {} {} {}-{} {} {}{}".format(
+        icon, lbl, TEAMS[home][1], home, sh, sa, away, TEAMS[away][1], pen)
+    if cheer:
+        out += "\n" + cheer
+    if exacto:
+        out += "\n🎯 ¡Marcador exacto!"
+    if acierto:
+        out += "\n✅ Acertaste: pasa {} {}".format(TEAMS[rw][1], rw)
+    elif lose_pick:
+        loser = away if rw == home else home
+        out += "\n❌ Tú tenías a {} {}, eliminado".format(TEAMS[loser][1], loser)
+    else:
+        out += "\nℹ️ No tenías a ninguno de los dos como clasificado"
+    out += "\n" + ko_stats_line(g, e)
+    if ranking_txt:
+        out += "\n\n━━━━━━━━━━━━━━━━\n\n" + ranking_txt
+    return out
+
+
 def check_matches(token, porras, state):
     """Mira los partidos y envía comienzos/finales nuevos a todos los identificados."""
     porras_by_pid = {p["id"]: p for p in porras}
@@ -1132,15 +1330,15 @@ def check_matches(token, porras, state):
         if home and away and frozenset((home, away)) in GROUP_KEYS:
             relevant.append((m, home, away))
 
-    # Eliminatoria: mapeo de cada partido a su slot del cuadro + resultados reales.
-    cidof = ko_cid_map(matches, porras)
-    ko_res = ko_real(matches, cidof)
+    # Eliminatoria: resultados reales (para puntuar por equipo, como la web) + slot de 16avos.
+    ko_list = ko_results_list(matches)
+    cidof = ko_cid_map(matches, porras)   # solo se usa para el slot de los 16avos
     relevant_ko = []
     for m in matches:
-        slot = cidof.get(m.get("id"))
+        pfx = KO_MAP.get((m.get("round_name") or "").strip().lower())
         home, away = match_team(m.get("home_team")), match_team(m.get("away_team"))
-        if slot and home and away:
-            relevant_ko.append((m, home, away, slot))
+        if pfx and home and away:
+            relevant_ko.append((m, home, away, pfx))
 
     def _seed(items):
         for it in items:
@@ -1205,7 +1403,7 @@ def check_matches(token, porras, state):
             cheer = PHRASES_ESP[int(mid) % len(PHRASES_ESP)] if real == "ESP" else None
             for cid, u in users:
                 pick = user_pick(porras_by_pid[u["pid"]].get("gr"), home, away)
-                rk = ranking_block(porras, results, u["pid"], ko_res)
+                rk = ranking_block(porras, results, u["pid"], ko_list)
                 if send(token, cid, msg_final(home, away, pick, gh, ga, real == pick, rk, pct, cheer)):
                     enviados += 1
             final_set.add(mid)
@@ -1213,7 +1411,10 @@ def check_matches(token, porras, state):
             persist(state, force=True)
 
     # ── Eliminatoria ──
-    for m, home, away, slot in relevant_ko:
+    # 16avos (cruces fijos): se avisa por el cruce concreto, como hasta ahora.
+    # Octavos en adelante: el cruce real puede no coincidir con la porra, así que se avisa
+    # por EQUIPO (¿tu clasificado de esta ronda gana su partido?), igual que puntúa la web.
+    for m, home, away, pfx in relevant_ko:
         mid = m["id"]
         st = (m.get("status") or "").lower()
         kickoff = parse_dt(m.get("event_date"))
@@ -1223,26 +1424,50 @@ def check_matches(token, porras, state):
             demasiado_tarde = st not in LIVE_ST
         else:
             demasiado_tarde = False
+        lbl = ROUND_LBL.get(pfx, "")
+        slot = cidof.get(mid) if pfx == "c" else None
 
         if mid not in comienzo_set and toca_comienzo and not demasiado_tarde:
             for chat, u in users:
-                pred = (porras_by_pid[u["pid"]].get("ko") or {}).get(slot)
-                if send(token, chat, msg_comienzo_ko(home, away, pred)):
+                ko = porras_by_pid[u["pid"]].get("ko") or {}
+                if pfx == "c":
+                    msg = msg_comienzo_ko(home, away, ko.get(slot) if slot else None)
+                else:
+                    msg = msg_comienzo_ko_adv(home, away, lbl,
+                                              ko_user_pick(ko, pfx, home),
+                                              ko_user_pick(ko, pfx, away))
+                if send(token, chat, msg):
                     enviados += 1
             comienzo_set.add(mid)
             state["comienzo"].append(mid)
             persist(state, force=True)
 
         if st in FINISHED_ST and mid not in final_set:
-            real = ko_res.get(slot)
-            if not real or not real.get("winner"):
+            w = _match_winner(m)
+            if not w:
                 continue
-            g, e = ko_pcts(porras, slot, real)
-            cheer = PHRASES_ESP[int(mid) % len(PHRASES_ESP)] if real["winner"] == "ESP" else None
+            et = m.get("extra_time_score") or {}
+            sh = et.get("home") if et.get("home") is not None else m.get("home_score")
+            sa = et.get("away") if et.get("away") is not None else m.get("away_score")
+            if sh is None or sa is None:
+                continue
+            real = {"winner": w, "sh": sh, "sa": sa}
+            cheer = PHRASES_ESP[int(mid) % len(PHRASES_ESP)] if w == "ESP" else None
+            if pfx == "c":
+                g, e = ko_pcts(porras, slot, real) if slot else (0, 0)
+            else:
+                g, e = ko_pcts_adv(porras, pfx, w, sh, sa)
             for chat, u in users:
-                pred = (porras_by_pid[u["pid"]].get("ko") or {}).get(slot)
-                rk = ranking_block(porras, results, u["pid"], ko_res)
-                if send(token, chat, msg_final_ko(home, away, real, pred, g, e, rk, cheer)):
+                ko = porras_by_pid[u["pid"]].get("ko") or {}
+                rk = ranking_block(porras, results, u["pid"], ko_list)
+                if pfx == "c":
+                    msg = msg_final_ko(home, away, real, ko.get(slot) if slot else None,
+                                       g, e, rk, cheer)
+                else:
+                    msg = msg_final_ko_adv(home, away, real, lbl,
+                                           ko_user_pick(ko, pfx, home),
+                                           ko_user_pick(ko, pfx, away), g, e, rk, cheer)
+                if send(token, chat, msg):
                     enviados += 1
             final_set.add(mid)
             state["final"].append(mid)
