@@ -538,18 +538,10 @@ def cmd_miporra(token, cid, p, goals_map=None, porras=None):
         if p.get(campo):
             lines.append("{}: {}".format(etq, p[campo]))
 
-    nxt = next_matches(None, porras)
-    if nxt:
-        gr = p.get("gr") or {}
-        ko = p.get("ko") or {}
-        lines.append("\n📅 <b>Próximos partidos</b> (tu pronóstico):")
-        for k, h, a, slot in nxt:
-            when = k.astimezone(ESP_TZ).strftime("%d/%m %H:%M")
-            base = "{} · {} {} - {} {}".format(when, TEAMS[h][1], h, a, TEAMS[a][1])
-            if slot:  # KO: marcador exacto (con '*' en empate)
-                lines.append("{} → <b>{}</b>".format(base, _ko_pred_score(ko.get(slot), h, a)))
-            else:  # grupos: ganador
-                lines.append("{} → <b>{}</b>".format(base, user_pick(gr, h, a) or "empate"))
+    brk = bracket_block(p.get("ko"))
+    if brk:
+        lines.append("\n🗺️ <b>Tu bracket completo</b> (tu pronóstico):")
+        lines.extend(brk)
     send(token, cid, "\n".join(lines))
 
 
@@ -612,6 +604,43 @@ def _ko_pred_score(pred, h, a):
         if w == a:
             return "{}-{}*".format(sh, sa)
     return "{}-{}".format(sh, sa)
+
+
+# Rondas del bracket en orden (etiqueta, prefijo de slot, nº de cruces)
+KO_ROUNDS = [("16avos", "c", 16), ("Octavos", "oct", 8), ("Cuartos", "qf", 4),
+             ("Semifinales", "sf", 2), ("🥉 3.er puesto", "p3f", 1), ("🏆 Final", "fin2", 1)]
+
+
+def _ko_flag(name):
+    """(bandera, código de 3 letras) de un equipo por su nombre en español."""
+    c = match_team(name)
+    return (TEAMS.get(c, (None, ""))[1], c or (name or "?"))
+
+
+def _ko_own_score(s):
+    """Marcador pronosticado tal cual lo guardó el usuario (sin reorientar al partido
+    real). En empate, '*' en el lado del ganador (pasa por penaltis)."""
+    sh, sa, w = s.get("scoreH"), s.get("scoreA"), match_team(s.get("winner") or "")
+    if sh == sa:
+        return "{}*-{}".format(sh, sa) if w == match_team(s.get("homeTeam") or "") else "{}-{}*".format(sh, sa)
+    return "{}-{}".format(sh, sa)
+
+
+def bracket_block(ko):
+    """Pinta el bracket completo de una porra (todas las rondas) agrupado por ronda."""
+    ko = ko or {}
+    lines = []
+    for label, pfx, n in KO_ROUNDS:
+        slots = [ko.get(pfx + str(i)) for i in range(n)]
+        slots = [s for s in slots if s and s.get("winner")]
+        if not slots:
+            continue
+        lines.append("\n<b>{}</b>".format(label))
+        for s in slots:
+            fh, ch = _ko_flag(s.get("homeTeam"))
+            fa, ca = _ko_flag(s.get("awayTeam"))
+            lines.append("{} {} {} {} {}".format(fh, ch, _ko_own_score(s), ca, fa))
+    return lines
 
 
 def do_compare_pid(token, cid, my_pid, other_pid, porras):
