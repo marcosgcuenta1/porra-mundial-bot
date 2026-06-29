@@ -27,6 +27,7 @@ import requests
 
 from data import TEAMS, PORRA
 
+HERE = os.path.dirname(os.path.abspath(__file__))
 TG_API = "https://api.telegram.org/bot{token}/{method}"
 SB_URL = "https://zavqpnsbsmivsuvwurkd.supabase.co"
 SB_KEY = "sb_publishable_gzIrT1J8xG5ZGTIxJHFzfg_BAO-XGPm"
@@ -239,40 +240,34 @@ def display_name(nombre, apellidos):
     return re.sub(r"\b\w", lambda m: m.group().upper(), full, flags=re.UNICODE)
 
 
-def group_results(matches):
-    """Resultados de grupos terminados: clave 'A_0' -> '1'/'x'/'2' (local de la web)."""
-    res = {}
-    for m in matches:
-        if (m.get("status") or "").lower() not in FINISHED_ST:
-            continue
-        # Saltar los partidos de eliminatoria (como la web: solo cuentan los de grupo, !cid).
-        # Si no, un reencuentro de dos equipos del mismo grupo en KO falsearía el grupo.
-        if KO_MAP.get((m.get("round_name") or "").strip().lower()):
-            continue
-        home, away = match_team(m.get("home_team")), match_team(m.get("away_team"))
-        gk = GROUP_KEYS.get(frozenset((home, away))) if home and away else None
-        if not gk:
-            continue
-        key, hc, _ac = gk
-        gh_api, ga_api = m.get("home_score"), m.get("away_score")
-        if gh_api is None or ga_api is None:
-            continue
-        gh, ga = (gh_api, ga_api) if home == hc else (ga_api, gh_api)
-        res[key] = "1" if gh > ga else ("x" if gh == ga else "2")
-    return res
+def web_points(porras, matches):
+    """Clasificación = el MOTOR REAL de la web de César (su `calcPuntos`), ejecutado en Node
+    sobre los mismos datos (porras de Supabase + resultados de la API). El bot NO calcula la
+    puntuación: descarga el JS de la web y lee lo que produce. Devuelve {pid: total}.
+    Lanza RuntimeError si la web no está accesible o su motor falla (el loop reintenta)."""
+    payload = json.dumps({"porras": porras, "fixtures": matches})
+    try:
+        r = subprocess.run(["node", os.path.join(HERE, "web_engine.js")],
+                           input=payload, capture_output=True, text=True,
+                           timeout=90, encoding="utf-8")
+    except Exception as e:
+        raise RuntimeError("No pude lanzar el motor de la web: {}".format(e))
+    if r.returncode != 0:
+        raise RuntimeError("Motor de la web falló ({}): {}".format(
+            r.returncode, (r.stderr or "").strip()[:300]))
+    try:
+        data = json.loads(r.stdout)
+    except Exception as e:
+        raise RuntimeError("Salida del motor de la web ilegible: {}".format(e))
+    return {row["id"]: row.get("total", 0) for row in data}
 
 
-def ranking(porras, results, ko_list=None):
-    rows = []
-    for p in porras:
-        if not p.get("active"):
-            continue
-        gr = p.get("gr") or {}
-        pts = 3 * sum(1 for k, real in results.items() if gr.get(k) == real)
-        if ko_list:
-            pts += ko_points(p.get("ko"), ko_list)
-        rows.append([p["id"], display_name(p.get("nombre"), p.get("apellidos")), pts])
-    # Cláusula de la porra: Iván Gómez Peral queda por delante en caso de empate a puntos.
+def ranking(porras, points_by_id):
+    """Filas [pid, nombre, puntos] ordenadas, con los puntos que da la web. El bot solo ordena
+    (misma cláusula de desempate de Iván que aplica la web en su renderRanking)."""
+    rows = [[p["id"], display_name(p.get("nombre"), p.get("apellidos")),
+             points_by_id.get(p["id"], 0)]
+            for p in porras if p.get("active")]
     rows.sort(key=lambda x: (-x[2], 0 if normalize(x[1]) == "ivangomezperal" else 1))
     return rows
 
@@ -287,10 +282,10 @@ def rank_line(i, name, pts, is_me):
     return "<b>{}</b>".format(line) if i < 3 else line
 
 
-def ranking_block(porras, results, my_pid, ko_list=None):
+def ranking_block(porras, points_by_id, my_pid):
     if my_pid is None:
         return ""
-    rk = ranking(porras, results, ko_list)
+    rk = ranking(porras, points_by_id)
     idx = next((i for i, r in enumerate(rk) if r[0] == my_pid), None)
     if idx is None:
         return ""
@@ -432,15 +427,13 @@ BOT_COMMANDS = [
 
 def cmd_ranking(token, cid, pid, porras):
     matches = fetch_matches()
-    results = group_results(matches)
-    ko_list = ko_results_list(matches)
-    blk = ranking_block(porras, results, pid, ko_list)
+    blk = ranking_block(porras, web_points(porras, matches), pid)
     send(token, cid, blk or "Aún no estás en la clasificación (o no hay resultados todavía).")
 
 
 def cmd_ranking_full(token, cid, pid, porras):
     matches = fetch_matches()
-    rk = ranking(porras, group_results(matches), ko_results_list(matches))
+    rk = ranking(porras, web_points(porras, matches))
     if not rk:
         send(token, cid, "Aún no hay clasificación.")
         return
@@ -1238,29 +1231,6 @@ def ko_user_pick(ko, pfx, team):
     return None
 
 
-def ko_points(ko_pred, ko_list):
-    """Puntos de eliminatoria. PORT EXACTO de calcPuntos de la web: busca el partido real con
-    findRealKOForPrediction y casa el ganador con namesMatch (difuso); bonus de marcador en
-    crudo. El ranking sale igual que la web, incluido el matching de huecos sin rellenar."""
-    pts = 0
-    for slot, pred in (ko_pred or {}).items():
-        if not pred or not pred.get("winner") or pred.get("lateNoScore"):
-            continue
-        pfx = ko_pfx(slot)
-        if pfx not in KO_PTS:
-            continue
-        real = _find_real_ko(pfx, pred, ko_list)
-        if not real or not real.get("winner"):
-            continue
-        team_pts, score_pts = KO_PTS[pfx]
-        if _names_match(real["winner"], pred["winner"]):
-            pts += team_pts
-            ph, pa = _int(pred.get("scoreH")), _int(pred.get("scoreA"))
-            if ph is not None and pa is not None and _int(real["sh"]) == ph and _int(real["sa"]) == pa:
-                pts += score_pts
-    return pts
-
-
 def ko_pcts(porras, slot, real):
     """(% acertó ganador, % acertó marcador exacto) entre quienes predijeron ese cruce."""
     preds = [pr for p in porras if p.get("active")
@@ -1442,7 +1412,15 @@ def check_matches(token, porras, state):
     porras_by_pid = {p["id"]: p for p in porras}
     now = datetime.now(timezone.utc)
     matches = fetch_matches()
-    results = group_results(matches)
+
+    # La clasificación la calcula el MOTOR DE LA WEB (Node). Se pide una sola vez por pasada
+    # y solo si hay que mandar algún final (que es lo que la lleva incrustada).
+    _pts_cache = {}
+
+    def _pts():
+        if "v" not in _pts_cache:
+            _pts_cache["v"] = web_points(porras, matches)
+        return _pts_cache["v"]
 
     relevant = []
     for m in matches:
@@ -1450,9 +1428,8 @@ def check_matches(token, porras, state):
         if home and away and frozenset((home, away)) in GROUP_KEYS:
             relevant.append((m, home, away))
 
-    # Eliminatoria: resultados reales (para puntuar por equipo, como la web) + slot de 16avos.
-    ko_list = ko_results_list(matches)
-    cidof = ko_cid_map(matches, porras)   # solo se usa para el slot de los 16avos
+    # Eliminatoria: slot de los 16avos (para el aviso del cruce fijo).
+    cidof = ko_cid_map(matches, porras)
     relevant_ko = []
     for m in matches:
         pfx = KO_MAP.get((m.get("round_name") or "").strip().lower())
@@ -1523,7 +1500,7 @@ def check_matches(token, porras, state):
             cheer = PHRASES_ESP[int(mid) % len(PHRASES_ESP)] if real == "ESP" else None
             for cid, u in users:
                 pick = user_pick(porras_by_pid[u["pid"]].get("gr"), home, away)
-                rk = ranking_block(porras, results, u["pid"], ko_list)
+                rk = ranking_block(porras, _pts(), u["pid"])
                 if send(token, cid, msg_final(home, away, pick, gh, ga, real == pick, rk, pct, cheer)):
                     enviados += 1
             final_set.add(mid)
@@ -1577,7 +1554,7 @@ def check_matches(token, porras, state):
                 g, e = ko_pcts_adv(porras, pfx, w, sh, sa)
             for chat, u in users:
                 ko = porras_by_pid[u["pid"]].get("ko") or {}
-                rk = ranking_block(porras, results, u["pid"], ko_list)
+                rk = ranking_block(porras, _pts(), u["pid"])
                 if pfx == "c":
                     msg = msg_final_ko(home, away, real, ko.get(slot) if slot else None,
                                        g, e, rk, cheer)

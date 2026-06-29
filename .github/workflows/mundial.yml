@@ -28,6 +28,11 @@ jobs:
         with:
           python-version: "3.11"
 
+      # Node es necesario: la clasificación la calcula el MOTOR REAL de la web (web_engine.js).
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
       - run: pip install -r requirements.txt
 
       - name: Bot en escucha (long-polling)
