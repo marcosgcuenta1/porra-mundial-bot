@@ -538,7 +538,7 @@ def cmd_miporra(token, cid, p, goals_map=None, porras=None):
         if p.get(campo):
             lines.append("{}: {}".format(etq, p[campo]))
 
-    nxt = next_matches(3, porras)
+    nxt = next_matches(None, porras)
     if nxt:
         gr = p.get("gr") or {}
         ko = p.get("ko") or {}
@@ -554,7 +554,8 @@ def cmd_miporra(token, cid, p, goals_map=None, porras=None):
 
 
 def next_matches(n=3, porras=None):
-    """Los n próximos partidos sin empezar (grupos o KO): (hora, home, away, slot|None)."""
+    """Los n próximos partidos sin empezar (grupos o KO): (hora, home, away, slot|None).
+    n=None devuelve todos los próximos con equipos ya conocidos."""
     matches = fetch_matches()
     cidof = ko_cid_map(matches, porras)
     now = datetime.now(timezone.utc)
@@ -572,7 +573,7 @@ def next_matches(n=3, porras=None):
             continue
         up.append((k, h, a, slot))
     up.sort(key=lambda x: x[0])
-    return up[:n]
+    return up if n is None else up[:n]
 
 
 def compare_keyboard(candidates):
@@ -624,7 +625,7 @@ def do_compare_pid(token, cid, my_pid, other_pid, porras):
     my_ko, their_ko = me.get("ko") or {}, other.get("ko") or {}
     lines = ["<b>TU PREDICCIÓN vs {}</b>".format(other_name.upper()),
              "━━━━━━━━━━━━━━━━"]
-    for k, h, a, slot in next_matches(10, porras):
+    for k, h, a, slot in next_matches(None, porras):
         if slot:  # KO: marcador exacto
             mp = _ko_pred_score(my_ko.get(slot), h, a)
             tp = _ko_pred_score(their_ko.get(slot), h, a)
