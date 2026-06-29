@@ -1358,24 +1358,54 @@ def _ko_team_score(pred, team):
     return "{}-{}".format(sa, sh)
 
 
-def msg_comienzo_ko_adv(home, away, lbl, home_pick, away_pick):
-    """Comienzo de un partido de octavos+. El cruce real puede no coincidir con la porra,
-    así que se habla de qué EQUIPO de los dos pusiste tú como que pasa esta ronda."""
+_DEPTH_ORDER = ["c", "oct", "qf", "p3f", "sf", "fin2"]
+
+
+def _ko_depth(ko, team):
+    """Hasta qué ronda predijo el usuario que llega 'team' (índice; -1 si nunca)."""
+    d = -1
+    for i, pfx in enumerate(_DEPTH_ORDER):
+        if ko_user_pick(ko, pfx, team):
+            d = i
+    return d
+
+
+def _pred_vs_line(home, away, pred, winner):
+    """'Tu predicción: 🇫🇷 FRA 0 - 1 ESP 🇪🇸' orientado al partido real, ganando 'winner'
+    con el marcador que el usuario le puso a 'winner' en su ronda."""
+    if match_team(pred.get("homeTeam")) == winner:
+        wg, lg = pred.get("scoreH"), pred.get("scoreA")
+    else:
+        wg, lg = pred.get("scoreA"), pred.get("scoreH")
+    x, y = (wg, lg) if home == winner else (lg, wg)
+    if x == y:  # empate: '*' en el ganador (pasa por penaltis)
+        xs = "{}*".format(x) if home == winner else "{}".format(x)
+        ys = "{}*".format(y) if away == winner else "{}".format(y)
+    else:
+        xs, ys = str(x), str(y)
+    return "Tu predicción: {} {} {} - {} {} {}".format(
+        TEAMS[home][1], home, xs, ys, away, TEAMS[away][1])
+
+
+def msg_comienzo_ko_adv(home, away, lbl, pfx, ko):
+    """Comienzo de un partido de octavos+. El cruce real puede no coincidir con la porra:
+    se dice cuántos de los dos pusiste como clasificados y tu predicción orientada al partido.
+    Si tienes a los dos, gana el que predijiste que llega más lejos."""
     l1 = "Comienzo de {} {} - {} {} · {}".format(
         TEAMS[home][1], home, away, TEAMS[away][1], lbl)
-    if home_pick and away_pick:
-        body = ("Tienes a {} {} y a {} {} como clasificados de esta ronda; aquí se eliminan "
-                "entre ellos, solo puntuará el que gane.").format(
-                    TEAMS[home][1], home, TEAMS[away][1], away)
-    elif home_pick:
-        body = "Pusiste que pasa {} {} (tu marcador {}). Necesitas que gane.".format(
-            TEAMS[home][1], home, _ko_team_score(home_pick, home))
-    elif away_pick:
-        body = "Pusiste que pasa {} {} (tu marcador {}). Necesitas que gane.".format(
-            TEAMS[away][1], away, _ko_team_score(away_pick, away))
-    else:
-        body = "De esta ronda no tienes a ninguno de estos dos como clasificado."
-    return l1 + "\n" + body
+    hp, ap = ko_user_pick(ko, pfx, home), ko_user_pick(ko, pfx, away)
+    if hp and ap:
+        winner = home if _ko_depth(ko, home) >= _ko_depth(ko, away) else away
+        pred = hp if winner == home else ap
+        return "{}\nTienes a ambos como clasificados.\n{}".format(
+            l1, _pred_vs_line(home, away, pred, winner))
+    if hp:
+        return "{}\nTienes a {} {} como clasificado.\n{}".format(
+            l1, TEAMS[home][1], home, _pred_vs_line(home, away, hp, home))
+    if ap:
+        return "{}\nTienes a {} {} como clasificado.\n{}".format(
+            l1, TEAMS[away][1], away, _pred_vs_line(home, away, ap, away))
+    return "{}\nNo tienes a ninguno como clasificado.".format(l1)
 
 
 def msg_final_ko_adv(home, away, real, lbl, home_pick, away_pick, g, e,
@@ -1523,9 +1553,7 @@ def check_matches(token, porras, state):
                 if pfx == "c":
                     msg = msg_comienzo_ko(home, away, ko.get(slot) if slot else None)
                 else:
-                    msg = msg_comienzo_ko_adv(home, away, lbl,
-                                              ko_user_pick(ko, pfx, home),
-                                              ko_user_pick(ko, pfx, away))
+                    msg = msg_comienzo_ko_adv(home, away, lbl, pfx, ko)
                 if send(token, chat, msg):
                     enviados += 1
             comienzo_set.add(mid)
