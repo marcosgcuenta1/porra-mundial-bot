@@ -278,7 +278,9 @@ def rank_line(i, name, pts, is_me):
     el top 3 lleva medalla al final y va en negrita, igual que tu propia fila."""
     medal = {0: " 🥇", 1: " 🥈", 2: " 🥉"}.get(i, "")
     line = "{}º {} — {} pts{}".format(i + 1, name, pts, medal)
-    return "<b>{}</b>".format(line) if (i < 3 or is_me) else line
+    if is_me:
+        return "👉 <b>{}</b> 👈".format(line)
+    return "<b>{}</b>".format(line) if i < 3 else line
 
 
 def ranking_block(porras, results, my_pid, ko_res=None):
