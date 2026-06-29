@@ -279,7 +279,7 @@ def rank_line(i, name, pts, is_me):
     medal = {0: " 🥇", 1: " 🥈", 2: " 🥉"}.get(i, "")
     line = "{}º {} — {} pts{}".format(i + 1, name, pts, medal)
     if is_me:
-        return "👉 <b>{}</b> 👈".format(line)
+        return "<b>{}</b> 👈".format(line)
     return "<b>{}</b>".format(line) if i < 3 else line
 
 
