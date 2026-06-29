@@ -745,7 +745,9 @@ def do_compare_pid(token, cid, my_pid, other_pid, porras):
         coin = [c for c in mine if c in theirs]
         only_me = [c for c in mine if c not in theirs]
         only_th = [c for c in theirs if c not in mine]
-        lines.append("\n<b>{}</b> · quién pasa".format(label))
+        # La Final no es "quién pasa" sino quién gana el título; va sin la coletilla.
+        head = "<b>{}</b>".format(label) if pfx == "fin2" else "<b>{}</b> · quién pasa".format(label)
+        lines.append("\n" + head)
         if coin:
             lines.append("🤝 ambos: " + _flags(coin))
         if only_me:
