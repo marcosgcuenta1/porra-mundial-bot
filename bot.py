@@ -277,7 +277,7 @@ def rank_line(i, name, pts, is_me):
     """Una fila de clasificación. Todas empiezan por el puesto (nombres alineados);
     el top 3 lleva medalla al final y va en negrita, igual que tu propia fila."""
     medal = {0: " 🥇", 1: " 🥈", 2: " 🥉"}.get(i, "")
-    line = "{}º {} — {} pts{}".format(i + 1, name, pts, medal)
+    line = "{} pts · {}º {}{}".format(pts, i + 1, name, medal)
     if is_me:
         return "<b>{}</b> 👈".format(line)
     return "<b>{}</b>".format(line) if i < 3 else line
