@@ -35,4 +35,5 @@ jobs:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           BOT_STATE_KEY: ${{ secrets.BOT_STATE_KEY }}
+          SPORTS_TOKEN: ${{ secrets.SPORTS_TOKEN }}
         run: python bot.py loop

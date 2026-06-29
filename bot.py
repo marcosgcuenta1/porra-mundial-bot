@@ -32,7 +32,7 @@ SB_URL = "https://zavqpnsbsmivsuvwurkd.supabase.co"
 SB_KEY = "sb_publishable_gzIrT1J8xG5ZGTIxJHFzfg_BAO-XGPm"
 # Misma API de partidos que usa la web de la porra (resultados consistentes con el ranking).
 SPORTS_URL = "https://sports.bzzoiro.com/api/v2/events/?league_id=27&season_id=188&limit=200"
-SPORTS_KEY = os.environ.get("SPORTS_TOKEN", "65282d7cc77d80d27171566864fc427e7a6f1266")
+SPORTS_KEY = os.environ.get("SPORTS_TOKEN", "")  # va por secret/env, nunca hardcodeado
 # Goleadores reales (ESPN, sin registro): se suman partido a partido.
 ESPN_SB = "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=20260611-20260720&limit=400"
 ESPN_SUMMARY = "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/summary?event={}"
