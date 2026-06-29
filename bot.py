@@ -606,6 +606,15 @@ def do_compare(token, cid, my_pid, text, porras, user):
         send(token, cid, "¿Con cuál quieres comparar?", reply_markup=compare_keyboard(cands))
 
 
+def _ko_pred_score(pred, h, a):
+    """Marcador exacto pronosticado para un cruce, orientado al partido real (h-a), o '—'."""
+    if not pred or not pred.get("winner"):
+        return "—"
+    if match_team(pred.get("homeTeam")) == a:  # bracket al revés que el partido real
+        return "{}-{}".format(pred.get("scoreA"), pred.get("scoreH"))
+    return "{}-{}".format(pred.get("scoreH"), pred.get("scoreA"))
+
+
 def do_compare_pid(token, cid, my_pid, other_pid, porras):
     by_id = {p["id"]: p for p in porras}
     me, other = by_id.get(my_pid), by_id.get(other_pid)
@@ -614,11 +623,16 @@ def do_compare_pid(token, cid, my_pid, other_pid, porras):
         return
     other_name = display_name(other.get("nombre"), other.get("apellidos"))
     my_gr, their_gr = me.get("gr") or {}, other.get("gr") or {}
+    my_ko, their_ko = me.get("ko") or {}, other.get("ko") or {}
     lines = ["<b>TU PREDICCIÓN vs {}</b>".format(other_name.upper()),
              "━━━━━━━━━━━━━━━━"]
-    for k, h, a in next_matches(10):
-        mp = user_pick(my_gr, h, a) or "X"
-        tp = user_pick(their_gr, h, a) or "X"
+    for k, h, a, slot in next_matches(10):
+        if slot:  # KO: marcador exacto
+            mp = _ko_pred_score(my_ko.get(slot), h, a)
+            tp = _ko_pred_score(their_ko.get(slot), h, a)
+        else:      # grupos: ganador
+            mp = user_pick(my_gr, h, a) or "X"
+            tp = user_pick(their_gr, h, a) or "X"
         row = "{} {}-{} {} → {} / {}".format(TEAMS[h][1], h, a, TEAMS[a][1], mp, tp)
         lines.append("<b>{}</b>".format(row) if mp != tp else row)
     lines.append("\n<i>tú / {}  ·  en negrita, donde discrepáis</i>".format(other_name))
