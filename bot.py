@@ -638,24 +638,31 @@ def match_stats_block(porras, m, home, away, pfx, slot, k, me, points_by_id=None
     más repetidos (16avos) y pronóstico del líder."""
     active = [p for p in porras if p.get("active")]
     lbl = ROUND_LBL.get(pfx, "Grupos")
-    L = ["<b>{} {} - {} {}</b> · {}".format(TEAMS[home][1], home, away, TEAMS[away][1], lbl)]
-    if k:
-        L.append("" + k.astimezone(ESP_TZ).strftime("%d/%m %H:%M"))
+    when = " · " + k.astimezone(ESP_TZ).strftime("%d/%m %H:%M") if k else ""
+    L = ["<b>{} {} - {} {}{} · {}</b>".format(TEAMS[home][1], home, away, TEAMS[away][1], when, lbl)]
     # Tu predicción
     me_ko, me_gr = (me or {}).get("ko") or {}, (me or {}).get("gr") or {}
+    mine = None
     if pfx == "c" and slot and me_ko.get(slot, {}).get("winner"):
-        L.append(_pred_line(me_ko[slot]))
+        pr = me_ko[slot]
+        fh, ch = _ko_flag(pr.get("homeTeam"))
+        fa, ca = _ko_flag(pr.get("awayTeam"))
+        mine = "{} {} {} {} {}".format(fh, ch, _ko_own_score(pr), ca, fa)
     elif pfx and pfx != "c":
         hp, ap = ko_user_pick(me_ko, pfx, home), ko_user_pick(me_ko, pfx, away)
         if hp and ap:
-            L.append("🫵 Tienes a ambos como clasificados.")
+            mine = "pasan ambos"
         elif hp:
-            L.append("🫵 Pusiste que pasa {} {}".format(TEAMS[home][1], home))
+            mine = "pasa {} {}".format(TEAMS[home][1], home)
         elif ap:
-            L.append("🫵 Pusiste que pasa {} {}".format(TEAMS[away][1], away))
-    elif not pfx and user_pick(me_gr, home, away):
-        L.append("🫵 Tu predicción: gana {} {}".format(
-            *((TEAMS[home][1], home) if user_pick(me_gr, home, away) == home else (TEAMS[away][1], away))))
+            mine = "pasa {} {}".format(TEAMS[away][1], away)
+    elif not pfx:
+        w = user_pick(me_gr, home, away)
+        if w:
+            mine = "gana {} {}".format(*((TEAMS[home][1], home) if w == home else (TEAMS[away][1], away)))
+    if mine:
+        L.append("\n<b>Tu predicción:</b>")
+        L.append(mine)
     # Reparto: a quién da la porra como clasificado / ganador
     nh = na = 0
     for p in active:
@@ -672,7 +679,7 @@ def match_stats_block(porras, m, home, away, pfx, slot, k, me, points_by_id=None
         elif w == away:
             na += 1
     if nh + na:
-        L.append("\n<b>Quién pasa</b>")
+        L.append("\n<b>Predicción de la porra:</b>")
         L.append("{} {} {}% ({}) · {} {} {}% ({})".format(
             TEAMS[home][1], home, round(100 * nh / (nh + na)), nh,
             TEAMS[away][1], away, round(100 * na / (nh + na)), na))
@@ -695,16 +702,20 @@ def match_stats_block(porras, m, home, away, pfx, slot, k, me, points_by_id=None
             lid_id, lid_name, _ = rk[0]
             lko = next((p.get("ko") or {} for p in porras if p["id"] == lid_id), {})
             first = (lid_name or "Líder").split()[0]
+            lead = None
             if pfx == "c" and slot and lko.get(slot, {}).get("winner"):
                 pr = lko[slot]
                 fh, ch = _ko_flag(pr.get("homeTeam"))
                 fa, ca = _ko_flag(pr.get("awayTeam"))
-                L.append("\nLíder ({}): {} {} {} {} {}".format(first, fh, ch, _ko_own_score(pr), ca, fa))
+                lead = "{} {} {} {} {}".format(fh, ch, _ko_own_score(pr), ca, fa)
             elif pfx and pfx != "c":
                 if ko_user_pick(lko, pfx, home):
-                    L.append("\nLíder ({}): pasa {} {}".format(first, TEAMS[home][1], home))
+                    lead = "pasa {} {}".format(TEAMS[home][1], home)
                 elif ko_user_pick(lko, pfx, away):
-                    L.append("\nLíder ({}): pasa {} {}".format(first, TEAMS[away][1], away))
+                    lead = "pasa {} {}".format(TEAMS[away][1], away)
+            if lead:
+                L.append("\n<b>Líder ({}):</b>".format(first))
+                L.append(lead)
     return "\n".join(L)
 
 
