@@ -1036,6 +1036,8 @@ def _match_winner(m):
     if sa > sh:
         return away
     pen = m.get("penalty_shootout") or {}
+    if not pen:
+        return None   # empate terminado sin datos de penaltis: ganador desconocido (como la web)
     return home if (pen.get("home", 0) or 0) > (pen.get("away", 0) or 0) else away
 
 
