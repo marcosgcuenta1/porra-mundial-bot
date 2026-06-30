@@ -638,9 +638,9 @@ def match_stats_block(porras, m, home, away, pfx, slot, k, me, points_by_id=None
     más repetidos (16avos) y pronóstico del líder."""
     active = [p for p in porras if p.get("active")]
     lbl = ROUND_LBL.get(pfx, "Grupos")
-    L = ["📊 <b>{} {} - {} {}</b> · {}".format(TEAMS[home][1], home, away, TEAMS[away][1], lbl)]
+    L = ["<b>{} {} - {} {}</b> · {}".format(TEAMS[home][1], home, away, TEAMS[away][1], lbl)]
     if k:
-        L.append("🕐 " + k.astimezone(ESP_TZ).strftime("%d/%m %H:%M"))
+        L.append("" + k.astimezone(ESP_TZ).strftime("%d/%m %H:%M"))
     # Tu predicción
     me_ko, me_gr = (me or {}).get("ko") or {}, (me or {}).get("gr") or {}
     if pfx == "c" and slot and me_ko.get(slot, {}).get("winner"):
@@ -672,7 +672,7 @@ def match_stats_block(porras, m, home, away, pfx, slot, k, me, points_by_id=None
         elif w == away:
             na += 1
     if nh + na:
-        L.append("\n🔮 <b>Quién pasa</b>")
+        L.append("\n<b>Quién pasa</b>")
         L.append("{} {} {}% ({}) · {} {} {}% ({})".format(
             TEAMS[home][1], home, round(100 * nh / (nh + na)), nh,
             TEAMS[away][1], away, round(100 * na / (nh + na)), na))
@@ -685,7 +685,7 @@ def match_stats_block(porras, m, home, away, pfx, slot, k, me, points_by_id=None
                 kk = (pr["scoreH"], pr["scoreA"])
                 counts[kk] = counts.get(kk, 0) + 1
         if counts:
-            L.append("\n📊 <b>Marcadores más puestos</b>")
+            L.append("\n<b>Marcadores más puestos</b>")
             for (sh, sa), c in sorted(counts.items(), key=lambda x: -x[1])[:3]:
                 L.append("{}-{} → {}".format(sh, sa, c))
     # Pronóstico del líder
@@ -699,12 +699,12 @@ def match_stats_block(porras, m, home, away, pfx, slot, k, me, points_by_id=None
                 pr = lko[slot]
                 fh, ch = _ko_flag(pr.get("homeTeam"))
                 fa, ca = _ko_flag(pr.get("awayTeam"))
-                L.append("\n👑 Líder ({}): {} {} {} {} {}".format(first, fh, ch, _ko_own_score(pr), ca, fa))
+                L.append("\nLíder ({}): {} {} {} {} {}".format(first, fh, ch, _ko_own_score(pr), ca, fa))
             elif pfx and pfx != "c":
                 if ko_user_pick(lko, pfx, home):
-                    L.append("\n👑 Líder ({}): pasa {} {}".format(first, TEAMS[home][1], home))
+                    L.append("\nLíder ({}): pasa {} {}".format(first, TEAMS[home][1], home))
                 elif ko_user_pick(lko, pfx, away):
-                    L.append("\n👑 Líder ({}): pasa {} {}".format(first, TEAMS[away][1], away))
+                    L.append("\nLíder ({}): pasa {} {}".format(first, TEAMS[away][1], away))
     return "\n".join(L)
 
 
@@ -1626,7 +1626,7 @@ def ko_comienzo_extra(porras, home, away, pfx, slot, points_by_id=None):
         elif w == away:
             na += 1
     if nh + na:
-        lines.append("🔮 La porra: {}% {} {} · {}% {} {}".format(
+        lines.append("La porra: {}% {} {} · {}% {} {}".format(
             round(100 * nh / (nh + na)), TEAMS[home][1], home,
             round(100 * na / (nh + na)), TEAMS[away][1], away))
     # Marcador más repetido (solo 16avos: el cruce es fijo y los marcadores son comparables).
@@ -1639,7 +1639,7 @@ def ko_comienzo_extra(porras, home, away, pfx, slot, points_by_id=None):
                 counts[k] = counts.get(k, 0) + 1
         if counts:
             (sh, sa), n = max(counts.items(), key=lambda kv: kv[1])
-            lines.append("📊 Marcador más puesto: {}-{} ({})".format(sh, sa, n))
+            lines.append("Marcador más puesto: {}-{} ({})".format(sh, sa, n))
     # Pronóstico del líder de la clasificación (necesita el ranking del motor de la web).
     if points_by_id:
         rk = ranking(porras, points_by_id)
@@ -1652,13 +1652,13 @@ def ko_comienzo_extra(porras, home, away, pfx, slot, points_by_id=None):
                 if pr and pr.get("winner"):
                     fh, ch = _ko_flag(pr.get("homeTeam"))
                     fa, ca = _ko_flag(pr.get("awayTeam"))
-                    lines.append("👑 Líder ({}): {} {} {} {} {}".format(
+                    lines.append("Líder ({}): {} {} {} {} {}".format(
                         first, fh, ch, _ko_own_score(pr), ca, fa))
             else:
                 if ko_user_pick(lko, pfx, home):
-                    lines.append("👑 Líder ({}): pasa {} {}".format(first, TEAMS[home][1], home))
+                    lines.append("Líder ({}): pasa {} {}".format(first, TEAMS[home][1], home))
                 elif ko_user_pick(lko, pfx, away):
-                    lines.append("👑 Líder ({}): pasa {} {}".format(first, TEAMS[away][1], away))
+                    lines.append("Líder ({}): pasa {} {}".format(first, TEAMS[away][1], away))
     return ("\n" + "\n".join(lines)) if lines else ""
 
 
