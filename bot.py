@@ -1459,6 +1459,61 @@ def msg_comienzo_ko_adv(home, away, lbl, pfx, ko):
     return "{}\nNo tienes a ninguno como clasificado.".format(l1)
 
 
+def ko_comienzo_extra(porras, home, away, pfx, slot, points_by_id=None):
+    """Bloque de estadísticas (igual para todos) para el comienzo de un partido KO: reparto de
+    la porra, marcador más repetido (solo 16avos) y pronóstico del líder."""
+    active = [p for p in porras if p.get("active")]
+    lines = []
+    # Reparto: a quién da la porra como clasificado en este partido.
+    nh = na = 0
+    for p in active:
+        ko = p.get("ko") or {}
+        if pfx == "c":
+            pr = ko.get(slot) if slot else None
+            w = match_team(pr.get("winner")) if pr and pr.get("winner") else None
+        else:
+            w = home if ko_user_pick(ko, pfx, home) else (away if ko_user_pick(ko, pfx, away) else None)
+        if w == home:
+            nh += 1
+        elif w == away:
+            na += 1
+    if nh + na:
+        lines.append("🔮 La porra: {}% {} {} · {}% {} {}".format(
+            round(100 * nh / (nh + na)), TEAMS[home][1], home,
+            round(100 * na / (nh + na)), TEAMS[away][1], away))
+    # Marcador más repetido (solo 16avos: el cruce es fijo y los marcadores son comparables).
+    if pfx == "c" and slot:
+        counts = {}
+        for p in active:
+            pr = (p.get("ko") or {}).get(slot)
+            if pr and pr.get("scoreH") is not None and pr.get("scoreA") is not None:
+                k = (pr["scoreH"], pr["scoreA"])
+                counts[k] = counts.get(k, 0) + 1
+        if counts:
+            (sh, sa), n = max(counts.items(), key=lambda kv: kv[1])
+            lines.append("📊 Marcador más puesto: {}-{} ({})".format(sh, sa, n))
+    # Pronóstico del líder de la clasificación (necesita el ranking del motor de la web).
+    if points_by_id:
+        rk = ranking(porras, points_by_id)
+        if rk:
+            lid_id, lid_name, _ = rk[0]
+            lko = next((p.get("ko") or {} for p in porras if p["id"] == lid_id), {})
+            first = (lid_name or "Líder").split()[0]
+            if pfx == "c":
+                pr = lko.get(slot) if slot else None
+                if pr and pr.get("winner"):
+                    fh, ch = _ko_flag(pr.get("homeTeam"))
+                    fa, ca = _ko_flag(pr.get("awayTeam"))
+                    lines.append("👑 Líder ({}): {} {} {} {} {}".format(
+                        first, fh, ch, _ko_own_score(pr), ca, fa))
+            else:
+                if ko_user_pick(lko, pfx, home):
+                    lines.append("👑 Líder ({}): pasa {} {}".format(first, TEAMS[home][1], home))
+                elif ko_user_pick(lko, pfx, away):
+                    lines.append("👑 Líder ({}): pasa {} {}".format(first, TEAMS[away][1], away))
+    return ("\n" + "\n".join(lines)) if lines else ""
+
+
 def msg_final_ko_adv(home, away, real, lbl, home_pick, away_pick, g, e,
                      ranking_txt="", cheer=None):
     """Final de un partido de octavos+. Acierto = tenías al ganador como que pasa la ronda."""
@@ -1611,13 +1666,14 @@ def check_matches(token, porras, state):
         slot = cidof.get(mid) if pfx == "c" else None
 
         if mid not in comienzo_set and toca_comienzo and not demasiado_tarde:
+            extra = ko_comienzo_extra(porras, home, away, pfx, slot, _pts())
             for chat, u in users:
                 ko = porras_by_pid[u["pid"]].get("ko") or {}
                 if pfx == "c":
                     msg = msg_comienzo_ko(home, away, ko.get(slot) if slot else None)
                 else:
                     msg = msg_comienzo_ko_adv(home, away, lbl, pfx, ko)
-                if send(token, chat, msg):
+                if send(token, chat, msg + extra):
                     enviados += 1
             comienzo_set.add(mid)
             state["comienzo"].append(mid)
