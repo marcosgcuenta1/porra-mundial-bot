@@ -1102,7 +1102,7 @@ def process_chat(token, porras, state, updates):
                 u.update(new_user())
                 ask(token, cid, u)
             elif cmd in COMPARE_CMDS:
-                send(token, cid, "¿Cómo quieres comparar tu predicción?",
+                send(token, cid, "¿Con quién te la quieres comparar?",
                      reply_markup=compare_mode_keyboard())
             elif cmd in RANK_CMDS or cmd in FULLRANK_CMDS:
                 cmd_ranking_full(token, cid, u["pid"], porras)
