@@ -297,7 +297,7 @@ def ranking_block(porras, points_by_id, my_pid):
     for i in range(start, end):
         pid, name, pts = rk[i]
         lines.append(rank_line(i, name, pts, pid == my_pid))
-    return "\n".join(lines) + "\n\nVer entera: /clasificacioncompleta"
+    return "\n".join(lines) + "\n\nVer entera: /clasificacion"
 
 
 # --------------------------------------------------------------------------- #
@@ -401,8 +401,7 @@ for _grp, _lbl in [(RESET_CMDS, "start"), (RANK_CMDS, "clasificacion"),
         CMD_LABEL[_c] = _lbl
 
 AYUDA = ("<b>Comandos</b>\n"
-         "/clasificacion — tu posición ahora mismo\n"
-         "/clasificacioncompleta — la clasificación entera\n"
+         "/clasificacion — la clasificación entera\n"
          "/miporra — tus pronósticos y próximos partidos\n"
          "/compararprediccion — comparar tus pronósticos con otro\n"
          "/silencio — pausar los avisos\n"
@@ -413,8 +412,7 @@ AYUDA = ("<b>Comandos</b>\n"
 
 # Lista para el menú de comandos de Telegram (setMyCommands).
 BOT_COMMANDS = [
-    {"command": "clasificacion", "description": "Tu posición en la clasificación"},
-    {"command": "clasificacioncompleta", "description": "La clasificación entera (46)"},
+    {"command": "clasificacion", "description": "La clasificación entera (46)"},
     {"command": "miporra", "description": "Tus pronósticos y próximos partidos"},
     {"command": "compararprediccion", "description": "Comparar tus pronósticos con otro"},
     {"command": "silencio", "description": "Pausar los avisos"},
@@ -427,17 +425,6 @@ BOT_COMMANDS = [
 
 RANKING_NO_DISP = ("⚠️ La clasificación no está disponible ahora mismo (la web de la porra "
                    "está dando un error). Inténtalo en un rato.")
-
-
-def cmd_ranking(token, cid, pid, porras):
-    matches = fetch_matches()
-    try:
-        pts = web_points(porras, matches)
-    except RuntimeError:
-        send(token, cid, RANKING_NO_DISP)
-        return
-    blk = ranking_block(porras, pts, pid)
-    send(token, cid, blk or "Aún no estás en la clasificación (o no hay resultados todavía).")
 
 
 def cmd_ranking_full(token, cid, pid, porras):
@@ -693,7 +680,7 @@ def match_stats_block(porras, m, home, away, pfx, slot, k, me, points_by_id=None
                     else (pr["scoreA"], pr["scoreH"])
                 counts[kk] = counts.get(kk, 0) + 1
         if counts:
-            L.append("\n<b>Marcadores más puestos</b>")
+            L.append("\n<b>Marcadores más comunes</b>")
             for (sh, sa), c in sorted(counts.items(), key=lambda x: -x[1])[:3]:
                 L.append("{} {}-{} {} → {}".format(TEAMS[home][1], sh, sa, TEAMS[away][1], c))
     # Pronóstico del líder
@@ -715,7 +702,7 @@ def match_stats_block(porras, m, home, away, pfx, slot, k, me, points_by_id=None
                 elif ko_user_pick(lko, pfx, away):
                     lead = "pasa {} {}".format(TEAMS[away][1], away)
             if lead:
-                L.append("\n<b>Líder ({}):</b>".format(first))
+                L.append("\n<b>Predicción del Líder ({}):</b>".format(first))
                 L.append(lead)
     return "\n".join(L)
 
@@ -1117,9 +1104,7 @@ def process_chat(token, porras, state, updates):
             elif cmd in COMPARE_CMDS:
                 send(token, cid, "¿Cómo quieres comparar tu predicción?",
                      reply_markup=compare_mode_keyboard())
-            elif cmd in RANK_CMDS:
-                cmd_ranking(token, cid, u["pid"], porras)
-            elif cmd in FULLRANK_CMDS:
+            elif cmd in RANK_CMDS or cmd in FULLRANK_CMDS:
                 cmd_ranking_full(token, cid, u["pid"], porras)
             elif cmd in PORRA_CMDS:
                 cmd_miporra(token, cid, by_id.get(u["pid"]) or {},
@@ -1651,7 +1636,7 @@ def ko_comienzo_extra(porras, home, away, pfx, slot, points_by_id=None):
                 counts[k] = counts.get(k, 0) + 1
         if counts:
             (sh, sa), n = max(counts.items(), key=lambda kv: kv[1])
-            lines.append("Marcador más puesto: {}-{} ({})".format(sh, sa, n))
+            lines.append("Marcador más común: {}-{} ({})".format(sh, sa, n))
     # Pronóstico del líder de la clasificación (necesita el ranking del motor de la web).
     if points_by_id:
         rk = ranking(porras, points_by_id)
@@ -1664,13 +1649,13 @@ def ko_comienzo_extra(porras, home, away, pfx, slot, points_by_id=None):
                 if pr and pr.get("winner"):
                     fh, ch = _ko_flag(pr.get("homeTeam"))
                     fa, ca = _ko_flag(pr.get("awayTeam"))
-                    lines.append("Líder ({}): {} {} {} {} {}".format(
+                    lines.append("Predicción del Líder ({}): {} {} {} {} {}".format(
                         first, fh, ch, _ko_own_score(pr), ca, fa))
             else:
                 if ko_user_pick(lko, pfx, home):
-                    lines.append("Líder ({}): pasa {} {}".format(first, TEAMS[home][1], home))
+                    lines.append("Predicción del Líder ({}): pasa {} {}".format(first, TEAMS[home][1], home))
                 elif ko_user_pick(lko, pfx, away):
-                    lines.append("Líder ({}): pasa {} {}".format(first, TEAMS[away][1], away))
+                    lines.append("Predicción del Líder ({}): pasa {} {}".format(first, TEAMS[away][1], away))
     return ("\n" + "\n".join(lines)) if lines else ""
 
 
