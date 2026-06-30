@@ -558,7 +558,7 @@ def cmd_miporra(token, cid, p, goals_map=None, porras=None):
         lines.append("\n🗺️ <b>Tu bracket</b> (tu pronóstico):")
         lines.extend(brk)
         if ko_list:
-            lines.append("\n❌ nada\n🎯 marcador exacto pero no quién pasa (solo 16avos)"
+            lines.append("\n❌ nada\n🎯 marcador exacto pero no quién pasa"
                          "\n☑️ ganador\n✅ ganador y marcador exacto"
                          "\n👑 ganador, marcador y rival exacto")
     send(token, cid, "\n".join(lines))
