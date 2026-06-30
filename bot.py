@@ -1880,6 +1880,12 @@ def run_loop():
         print("Falta TELEGRAM_TOKEN.", file=sys.stderr)
         sys.exit(2)
 
+    # Sincronizar el menú de comandos de Telegram con BOT_COMMANDS en cada arranque.
+    try:
+        tg(token, "setMyCommands", commands=BOT_COMMANDS)
+    except Exception as e:
+        print("setMyCommands error:", e, file=sys.stderr)
+
     state = load_state()
     porras = fetch_porras()
     porras_ts = time.monotonic()
