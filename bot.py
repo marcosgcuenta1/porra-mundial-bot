@@ -656,6 +656,8 @@ def ko_pick_eval(pfx, pred, ko_list):
     outcome, r = ko_team_outcome(pfx, team, ko_list)
     if outcome is None:
         return ("", 0, False)              # su partido de esa ronda aún no se ha jugado
+    if outcome == "pending":
+        return ("⏳", None, True)           # jugado, esperando el resultado (penaltis)
     if outcome == "loss":
         return ("❌", 0, True)              # nada
     tp, sp, fp = KO_PTS[pfx]
@@ -689,7 +691,12 @@ def bracket_block(ko, ko_list=None):
             emoji, pts, played = ko_pick_eval(pfx, s, ko_list)
             fh, ch = _ko_flag(s.get("homeTeam"))
             fa, ca = _ko_flag(s.get("awayTeam"))
-            tail = " · {} (+{} puntos)".format(emoji, pts) if played else ""
+            if not played:
+                tail = ""
+            elif pts is None:                       # pendiente de penaltis
+                tail = " · {} pendiente".format(emoji)
+            else:
+                tail = " · {} (+{} puntos)".format(emoji, pts)
             lines.append("{} {} {} {} {}{}".format(fh, ch, _ko_own_score(s), ca, fa, tail))
     return lines
 
@@ -1206,12 +1213,13 @@ def ko_results_list(matches):
             winner = away
         else:
             ps = m.get("penalty_shootout") or {}
-            if not ps:
-                continue
-            winner = home if (ps.get("home", 0) or 0) > (ps.get("away", 0) or 0) else away
+            # Empate terminado pero sin datos de penaltis todavía: se incluye como PENDIENTE
+            # (winner=None) para que el partido aparezca en /miporra en vez de desaparecer.
+            winner = (home if (ps.get("home", 0) or 0) > (ps.get("away", 0) or 0) else away) if ps else None
         out.append({"pfx": pfx, "home": home, "away": away, "winner": winner, "sh": sh, "sa": sa,
                     "home_c": match_team(home), "away_c": match_team(away),
-                    "winner_c": match_team(winner)})
+                    "winner_c": match_team(winner) if winner else None,
+                    "pending": winner is None})
     return out
 
 
@@ -1244,6 +1252,8 @@ def ko_team_outcome(pfx, team, ko_list):
     for r in (ko_list or []):
         if r["pfx"] != pfx:
             continue
+        if r.get("pending") and team in (r.get("home_c"), r.get("away_c")):
+            return ("pending", r)   # jugado pero aún no se sabe quién pasó (penaltis)
         if r.get("winner_c") == team:
             return ("win", r)
         if team in (r.get("home_c"), r.get("away_c")):
