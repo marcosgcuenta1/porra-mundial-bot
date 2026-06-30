@@ -1021,8 +1021,32 @@ QF_PAIRS = [(0, 1), (2, 3), (4, 5), (6, 7)]
 SF_PAIRS = [(0, 1), (2, 3)]
 
 
+_ko_ovr_cache = {"v": {}, "ts": 0.0}
+
+
+def ko_overrides():
+    """Overrides manuales de ganador de KO que César mete en su web (`KO_WINNER_OVERRIDES`), para
+    los partidos de penaltis que la API deja sin rellenar. Devuelve {match_id: nombre_equipo}.
+    Cacheado 10 min; si no se puede leer, cae a lo cacheado/{} (el bot sigue con solo-API)."""
+    now = time.monotonic()
+    if _ko_ovr_cache["ts"] and now - _ko_ovr_cache["ts"] < 600:
+        return _ko_ovr_cache["v"]
+    try:
+        txt = requests.get(WEB_URL, timeout=20).text
+        blk = re.search(r"KO_WINNER_OVERRIDES\s*=\s*\{([^}]*)\}", txt)
+        ovr = {}
+        if blk:
+            for mm in re.finditer(r"(\d+)\s*:\s*'([^']+)'", blk.group(1)):
+                ovr[int(mm.group(1))] = mm.group(2)
+        _ko_ovr_cache["v"], _ko_ovr_cache["ts"] = ovr, now
+        return ovr
+    except Exception as e:
+        print("ko_overrides error:", e, file=sys.stderr)
+        return _ko_ovr_cache["v"]
+
+
 def _match_winner(m):
-    """Code del ganador de un partido terminado (con prórroga/penaltis), o None."""
+    """Code del ganador de un partido terminado (prórroga/penaltis/override de César), o None."""
     if (m.get("status") or "").lower() not in FINISHED_ST:
         return None
     et = m.get("extra_time_score") or {}
@@ -1036,9 +1060,11 @@ def _match_winner(m):
     if sa > sh:
         return away
     pen = m.get("penalty_shootout") or {}
-    if not pen:
-        return None   # empate terminado sin datos de penaltis: ganador desconocido (como la web)
-    return home if (pen.get("home", 0) or 0) > (pen.get("away", 0) or 0) else away
+    if pen:
+        return home if (pen.get("home", 0) or 0) > (pen.get("away", 0) or 0) else away
+    # Empate sin penaltis en la API: usar el override manual de la web de César si lo hay.
+    ovr = match_team(ko_overrides().get(m.get("id")))
+    return ovr if ovr in (home, away) else None
 
 
 def _ref_r32(porras):
@@ -1215,9 +1241,13 @@ def ko_results_list(matches):
             winner = away
         else:
             ps = m.get("penalty_shootout") or {}
-            # Empate terminado pero sin datos de penaltis todavía: se incluye como PENDIENTE
-            # (winner=None) para que el partido aparezca en /miporra en vez de desaparecer.
-            winner = (home if (ps.get("home", 0) or 0) > (ps.get("away", 0) or 0) else away) if ps else None
+            if ps:
+                winner = home if (ps.get("home", 0) or 0) > (ps.get("away", 0) or 0) else away
+            else:
+                # Sin penaltis en la API: usar el override manual de César si lo hay; si no,
+                # PENDIENTE (winner=None) para que el partido aparezca en /miporra como ⏳.
+                wc = match_team(ko_overrides().get(m.get("id")))
+                winner = home if wc == match_team(home) else (away if wc == match_team(away) else None)
         out.append({"pfx": pfx, "home": home, "away": away, "winner": winner, "sh": sh, "sa": sa,
                     "home_c": match_team(home), "away_c": match_team(away),
                     "winner_c": match_team(winner) if winner else None,
