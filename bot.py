@@ -180,7 +180,7 @@ def persist(state, force=False):
 def new_user():
     return {"pid": None, "name": None, "confirmed": False, "muted": False,
             "asked": False, "stage": "awaiting_name", "candidates": [],
-            "awaiting_compare": False,
+            "awaiting_compare": False, "focus_match": None,
             "msgs": 0, "first_seen": None, "last_active": None, "cmds": {}}
 
 
@@ -331,7 +331,7 @@ def msg_comienzo(home, away, winner, dist=None):
         return l1
     tu = fh if winner == home else (fa if winner == away else "X")
     pH, pX, pA = dist
-    return ("{}\n\n🫵 Tu predicción: {}\nLa del resto: {}% {} · {}% X · {}% {}"
+    return ("{}\n\nTu predicción: {}\nLa del resto: {}% {} · {}% X · {}% {}"
             .format(l1, tu, pH, fh, pX, pA, fa))
 
 
@@ -380,6 +380,7 @@ RESET_CMDS = ("/start", "/reset", "/cambiar", "/quien")
 RANK_CMDS = ("/clasificacion", "/clasi", "/ranking", "/posicion", "/puesto")
 FULLRANK_CMDS = ("/clasificacioncompleta", "/completa", "/todos")
 PORRA_CMDS = ("/miporra", "/porra", "/pronosticos")
+PREDRESTO_CMDS = ("/prediccionesdelresto", "/predicciones", "/resto")
 MUTE_CMDS = ("/silencio", "/mute", "/pausa")
 UNMUTE_CMDS = ("/avisos", "/activar", "/voz", "/reanudar")
 HELP_CMDS = ("/ayuda", "/help", "/comandos")
@@ -393,7 +394,8 @@ WEB_URL = "https://cesaresteban.github.io/NFQ-WORLD-CUP/"
 CMD_LABEL = {}
 for _grp, _lbl in [(RESET_CMDS, "start"), (RANK_CMDS, "clasificacion"),
                    (FULLRANK_CMDS, "clasificacioncompleta"), (PORRA_CMDS, "miporra"),
-                   (COMPARE_CMDS, "comparar"), (MUTE_CMDS, "silencio"),
+                   (COMPARE_CMDS, "comparar"), (PREDRESTO_CMDS, "prediccionesdelresto"),
+                   (MUTE_CMDS, "silencio"),
                    (UNMUTE_CMDS, "avisos"), (HELP_CMDS, "ayuda"),
                    (WEB_CMDS, "web"), (ADMIN_CMDS, "usuarios"),
                    (BROADCAST_CMDS, "aviso")]:
@@ -404,6 +406,7 @@ AYUDA = ("<b>Comandos</b>\n"
          "/clasificacion — la clasificación entera\n"
          "/miporra — tus pronósticos y próximos partidos\n"
          "/compararprediccion — comparar tus pronósticos con otro\n"
+         "/prediccionesdelresto — las predicciones de todos para un partido\n"
          "/silencio — pausar los avisos\n"
          "/avisos — reactivar los avisos\n"
          "/web — abrir la web de la porra\n"
@@ -415,6 +418,7 @@ BOT_COMMANDS = [
     {"command": "clasificacion", "description": "La clasificación entera (46)"},
     {"command": "miporra", "description": "Tus pronósticos y próximos partidos"},
     {"command": "compararprediccion", "description": "Comparar tus pronósticos con otro"},
+    {"command": "prediccionesdelresto", "description": "Las predicciones de todos para un partido"},
     {"command": "silencio", "description": "Pausar los avisos"},
     {"command": "avisos", "description": "Reactivar los avisos"},
     {"command": "web", "description": "Abrir la web de la porra"},
@@ -704,6 +708,7 @@ def match_stats_block(porras, m, home, away, pfx, slot, k, me, points_by_id=None
             if lead:
                 L.append("\n<b>Predicción del Líder ({}):</b>".format(first))
                 L.append(lead)
+    L.append("\nPredicciones del resto: /prediccionesdelresto")
     return "\n".join(L)
 
 
@@ -723,6 +728,74 @@ def cmd_match_stats(token, cid, match_id, porras, me):
         pts = None
     send(token, cid, match_stats_block(porras, m, home, away, pfx, slot,
                                        parse_dt(m.get("event_date")), me, pts))
+
+
+PRED_LEGEND = "❌ nada · 🎯 marcador · ☑️ ganador · ✅ ganador y marcador · 👑 todo"
+_EMOJI_RANK = {"👑": 0, "✅": 1, "🎯": 2, "☑️": 3, "❌": 4, "⏳": 5}
+
+
+def predicciones_resto(porras, home, away, pfx, slot, played, ko_list=None):
+    """Una fila por participante con su predicción para el partido. Si 'played', cada fila
+    lleva el emoji de su resultado y debajo la leyenda; si no, van ordenadas por marcador."""
+    active = [p for p in porras if p.get("active")]
+    ents = []
+    for p in active:
+        name = display_name(p.get("nombre"), p.get("apellidos"))
+        ko = p.get("ko") or {}
+        if pfx == "c":
+            pr = ko.get(slot) if slot else None
+            if not pr or not pr.get("winner"):
+                continue
+            score = _ko_pred_score(pr, home, away)
+            sh, sa = (pr.get("scoreH"), pr.get("scoreA")) if match_team(pr.get("homeTeam")) == home \
+                else (pr.get("scoreA"), pr.get("scoreH"))
+            if played and ko_list is not None:
+                emoji = ko_pick_eval("c", pr, ko_list)[0]
+                ents.append(((_EMOJI_RANK.get(emoji, 9), name), "{} {} · {}".format(score, emoji, name)))
+            else:
+                ents.append(((_int(sh) if _int(sh) is not None else 99,
+                              _int(sa) if _int(sa) is not None else 99, name),
+                             "{} · {}".format(score, name)))
+        elif pfx:
+            pick_home, pick_away = ko_user_pick(ko, pfx, home), ko_user_pick(ko, pfx, away)
+            pr = pick_home or pick_away
+            if not pr:
+                continue
+            team, fl = (home, TEAMS[home][1]) if pick_home else (away, TEAMS[away][1])
+            label = "pasa {} {}".format(fl, team)
+            if played and ko_list is not None:
+                emoji = ko_pick_eval(pfx, pr, ko_list)[0]
+                ents.append(((_EMOJI_RANK.get(emoji, 9), name), "{} {} · {}".format(label, emoji, name)))
+            else:
+                ents.append(((0 if pick_home else 1, name), "{} · {}".format(label, name)))
+    ents.sort(key=lambda e: e[0])
+    head = "<b>{} {} - {} {} · {}</b>".format(
+        TEAMS[home][1], home, away, TEAMS[away][1], ROUND_LBL.get(pfx, "Grupos"))
+    body = "\n".join(t for _, t in ents) if ents else "Nadie ha hecho predicción."
+    msg = head + "\n\n" + body
+    if played:
+        msg += "\n\n<i>{}</i>".format(PRED_LEGEND)
+    return msg
+
+
+def cmd_predicciones_resto(token, cid, u, porras):
+    """46 filas con la predicción de cada uno para el partido en foco (el del último aviso o
+    comparación). Antes del partido van ordenadas por marcador; después, con el emoji de cada uno."""
+    matches = fetch_matches()
+    mid = u.get("focus_match")
+    m = next((x for x in matches if x.get("id") == mid), None) if mid else None
+    if not m:
+        up = _upcoming_matches(porras, 1)
+        m = up[0][1] if up else None
+    if not m:
+        send(token, cid, "No hay partido para mostrar ahora mismo.")
+        return
+    home, away = match_team(m.get("home_team")), match_team(m.get("away_team"))
+    pfx = KO_MAP.get((m.get("round_name") or "").strip().lower())
+    slot = ko_cid_map(matches, porras).get(m.get("id")) if pfx == "c" else None
+    played = (m.get("status") or "").lower() in FINISHED_ST
+    ko_list = ko_results_list(matches) if played else None
+    send(token, cid, predicciones_resto(porras, home, away, pfx, slot, played, ko_list))
 
 
 def do_compare(token, cid, my_pid, text, porras, user):
@@ -1041,6 +1114,7 @@ def process_chat(token, porras, state, updates):
                 continue
             if data.startswith("mstat:"):
                 if u.get("confirmed"):
+                    u["focus_match"] = int(data[6:])
                     cmd_match_stats(token, cid, int(data[6:]), porras, by_id.get(u["pid"]))
                 continue
             if u.get("confirmed") or u.get("stage") != "awaiting_confirm":
@@ -1106,6 +1180,8 @@ def process_chat(token, porras, state, updates):
                      reply_markup=compare_mode_keyboard())
             elif cmd in RANK_CMDS or cmd in FULLRANK_CMDS:
                 cmd_ranking_full(token, cid, u["pid"], porras)
+            elif cmd in PREDRESTO_CMDS:
+                cmd_predicciones_resto(token, cid, u, porras)
             elif cmd in PORRA_CMDS:
                 cmd_miporra(token, cid, by_id.get(u["pid"]) or {},
                             (state.get("scorers") or {}).get("goals"), porras)
@@ -1508,7 +1584,7 @@ def _pred_line(pred):
             sh = "{}*".format(sh)
         elif pred.get("winner") == pred.get("awayTeam"):
             sa = "{}*".format(sa)
-    return "🫵 Tu predicción: {} {}-{} {}".format(
+    return "Tu predicción: {} {}-{} {}".format(
         _disp(pred.get("homeTeam"), True), sh, sa, _disp(pred.get("awayTeam"), False))
 
 
@@ -1516,7 +1592,7 @@ def msg_comienzo_ko(home, away, pred):
     l1 = "Comienzo de {} {} - {} {}".format(TEAMS[home][1], home, away, TEAMS[away][1])
     if pred and pred.get("winner"):
         return l1 + "\n" + _pred_line(pred)
-    return l1 + "\n🫵 Tu predicción: —"
+    return l1 + "\nTu predicción: —"
 
 
 def ko_stats_line(g, e):
@@ -1539,8 +1615,9 @@ def msg_final_ko(home, away, real, pred, g, e, ranking_txt="", cheer=None):
         out += "\n" + cheer
     if exacto:
         out += "\n🎯 ¡Resultado exacto!"
-    out += "\n" + (_pred_line(pred) if pred and pred.get("winner") else "🫵 Tu predicción: —")
+    out += "\n" + (_pred_line(pred) if pred and pred.get("winner") else "Tu predicción: —")
     out += "\n" + ko_stats_line(g, e)
+    out += "\nPredicciones del resto: /prediccionesdelresto"
     if ranking_txt:
         out += "\n\n━━━━━━━━━━━━━━━━\n\n" + ranking_txt
     return out
@@ -1579,7 +1656,7 @@ def _pred_vs_line(home, away, pred, winner):
         ys = "{}*".format(y) if away == winner else "{}".format(y)
     else:
         xs, ys = str(x), str(y)
-    return "🫵 Tu predicción: {} {} {} - {} {} {}".format(
+    return "Tu predicción: {} {} {} - {} {} {}".format(
         TEAMS[home][1], home, xs, ys, away, TEAMS[away][1])
 
 
@@ -1656,7 +1733,8 @@ def ko_comienzo_extra(porras, home, away, pfx, slot, points_by_id=None):
                     lines.append("Predicción del Líder ({}): pasa {} {}".format(first, TEAMS[home][1], home))
                 elif ko_user_pick(lko, pfx, away):
                     lines.append("Predicción del Líder ({}): pasa {} {}".format(first, TEAMS[away][1], away))
-    return ("\n" + "\n".join(lines)) if lines else ""
+    lines.append("\nPredicciones del resto: /prediccionesdelresto")
+    return "\n" + "\n".join(lines)
 
 
 def msg_final_ko_adv(home, away, real, lbl, home_pick, away_pick, g, e,
@@ -1683,6 +1761,7 @@ def msg_final_ko_adv(home, away, real, lbl, home_pick, away_pick, g, e,
     else:
         out += "\nℹ️ No tenías a ninguno de los dos como clasificado"
     out += "\n" + ko_stats_line(g, e)
+    out += "\nPredicciones del resto: /prediccionesdelresto"
     if ranking_txt:
         out += "\n\n━━━━━━━━━━━━━━━━\n\n" + ranking_txt
     return out
@@ -1813,6 +1892,7 @@ def check_matches(token, porras, state):
         if mid not in comienzo_set and toca_comienzo and not demasiado_tarde:
             extra = ko_comienzo_extra(porras, home, away, pfx, slot, _pts())
             for chat, u in users:
+                u["focus_match"] = mid
                 ko = porras_by_pid[u["pid"]].get("ko") or {}
                 if pfx == "c":
                     msg = msg_comienzo_ko(home, away, ko.get(slot) if slot else None)
@@ -1840,6 +1920,7 @@ def check_matches(token, porras, state):
             else:
                 g, e = ko_pcts_adv(porras, pfx, w, sh, sa)
             for chat, u in users:
+                u["focus_match"] = mid
                 ko = porras_by_pid[u["pid"]].get("ko") or {}
                 rk = ranking_block(porras, _pts(), u["pid"])
                 if pfx == "c":
