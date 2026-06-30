@@ -647,7 +647,7 @@ def match_stats_block(porras, m, home, away, pfx, slot, k, me, points_by_id=None
         pr = me_ko[slot]
         fh, ch = _ko_flag(pr.get("homeTeam"))
         fa, ca = _ko_flag(pr.get("awayTeam"))
-        mine = "{} {} {} {} {}".format(fh, ch, _ko_own_score(pr), ca, fa)
+        mine = "{} {} {}".format(fh, _ko_own_score(pr), fa)
     elif pfx and pfx != "c":
         hp, ap = ko_user_pick(me_ko, pfx, home), ko_user_pick(me_ko, pfx, away)
         if hp and ap:
@@ -680,21 +680,22 @@ def match_stats_block(porras, m, home, away, pfx, slot, k, me, points_by_id=None
             na += 1
     if nh + na:
         L.append("\n<b>Predicción de la porra:</b>")
-        L.append("{} {} {}% ({}) · {} {} {}% ({})".format(
-            TEAMS[home][1], home, round(100 * nh / (nh + na)), nh,
-            TEAMS[away][1], away, round(100 * na / (nh + na)), na))
+        L.append("{} {}% ({}) · {} {}% ({})".format(
+            TEAMS[home][1], round(100 * nh / (nh + na)), nh,
+            TEAMS[away][1], round(100 * na / (nh + na)), na))
     # Marcadores más repetidos (solo 16avos)
     if pfx == "c" and slot:
         counts = {}
         for p in active:
             pr = (p.get("ko") or {}).get(slot)
             if pr and pr.get("scoreH") is not None and pr.get("scoreA") is not None:
-                kk = (pr["scoreH"], pr["scoreA"])
+                kk = (pr["scoreH"], pr["scoreA"]) if match_team(pr.get("homeTeam")) == home \
+                    else (pr["scoreA"], pr["scoreH"])
                 counts[kk] = counts.get(kk, 0) + 1
         if counts:
             L.append("\n<b>Marcadores más puestos</b>")
             for (sh, sa), c in sorted(counts.items(), key=lambda x: -x[1])[:3]:
-                L.append("{}-{} → {}".format(sh, sa, c))
+                L.append("{} {}-{} {} → {}".format(TEAMS[home][1], sh, sa, TEAMS[away][1], c))
     # Pronóstico del líder
     if points_by_id:
         rk = ranking(porras, points_by_id)
@@ -707,7 +708,7 @@ def match_stats_block(porras, m, home, away, pfx, slot, k, me, points_by_id=None
                 pr = lko[slot]
                 fh, ch = _ko_flag(pr.get("homeTeam"))
                 fa, ca = _ko_flag(pr.get("awayTeam"))
-                lead = "{} {} {} {} {}".format(fh, ch, _ko_own_score(pr), ca, fa)
+                lead = "{} {} {}".format(fh, _ko_own_score(pr), fa)
             elif pfx and pfx != "c":
                 if ko_user_pick(lko, pfx, home):
                     lead = "pasa {} {}".format(TEAMS[home][1], home)
