@@ -558,7 +558,8 @@ def cmd_miporra(token, cid, p, goals_map=None, porras=None):
         lines.append("\n🗺️ <b>Tu bracket</b> (tu pronóstico):")
         lines.extend(brk)
         if ko_list:
-            lines.append("\n❌ nada\n☑️ ganador\n✅ ganador y marcador exacto"
+            lines.append("\n❌ nada\n🎯 marcador exacto pero no quién pasa (solo 16avos)"
+                         "\n☑️ ganador\n✅ ganador y marcador exacto"
                          "\n👑 ganador, marcador y rival exacto")
     send(token, cid, "\n".join(lines))
 
@@ -658,14 +659,23 @@ def ko_pick_eval(pfx, pred, ko_list):
         return ("", 0, False)              # su partido de esa ronda aún no se ha jugado
     if outcome == "pending":
         return ("⏳", None, True)           # jugado, esperando el resultado (penaltis)
-    if outcome == "loss":
-        return ("❌", 0, True)              # nada
     tp, sp, fp = KO_PTS[pfx]
-    # marcador desde la perspectiva del ganador (goles del ganador, goles del rival)
+    # marcador desde la perspectiva del equipo que el usuario dio por ganador (como la web)
     pw = (pred.get("scoreH"), pred.get("scoreA")) if match_team(pred.get("homeTeam")) == team \
         else (pred.get("scoreA"), pred.get("scoreH"))
-    rw = (r["sh"], r["sa"]) if r["winner_c"] == r["home_c"] else (r["sa"], r["sh"])
+    if r.get("home_c") == team:
+        rw = (r["sh"], r["sa"])
+    elif r.get("away_c") == team:
+        rw = (r["sa"], r["sh"])
+    else:
+        rw = (None, None)
     exact = _int(pw[0]) is not None and _int(pw[0]) == _int(rw[0]) and _int(pw[1]) == _int(rw[1])
+    if outcome == "loss":
+        # Ganador fallado. En 16avos, si clavaste el marcador (típico empate por penaltis que
+        # se va al otro lado) sumas el marcador igual, como la web. En octavos+ no suma nada.
+        if pfx == "c" and exact:
+            return ("🎯", sp, True)         # acertaste el marcador, no quién pasa
+        return ("❌", 0, True)              # nada
     if not exact:
         return ("☑️", tp, True)             # solo ganador
     cruce = {match_team(pred.get("homeTeam")), match_team(pred.get("awayTeam"))}
