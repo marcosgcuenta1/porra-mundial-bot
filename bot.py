@@ -180,7 +180,7 @@ def persist(state, force=False):
 def new_user():
     return {"pid": None, "name": None, "confirmed": False, "muted": False,
             "asked": False, "stage": "awaiting_name", "candidates": [],
-            "awaiting_compare": False, "focus_match": None,
+            "awaiting_compare": False, "focus_match": None, "last_compared": None,
             "msgs": 0, "first_seen": None, "last_active": None, "cmds": {}}
 
 
@@ -381,6 +381,7 @@ RANK_CMDS = ("/clasificacion", "/clasi", "/ranking", "/posicion", "/puesto")
 FULLRANK_CMDS = ("/clasificacioncompleta", "/completa", "/todos")
 PORRA_CMDS = ("/miporra", "/porra", "/pronosticos")
 PREDRESTO_CMDS = ("/prediccionesdelresto", "/predicciones", "/resto")
+VERSUPORRA_CMDS = ("/versuporra", "/suporra")
 MUTE_CMDS = ("/silencio", "/mute", "/pausa")
 UNMUTE_CMDS = ("/avisos", "/activar", "/voz", "/reanudar")
 HELP_CMDS = ("/ayuda", "/help", "/comandos")
@@ -395,6 +396,7 @@ CMD_LABEL = {}
 for _grp, _lbl in [(RESET_CMDS, "start"), (RANK_CMDS, "clasificacion"),
                    (FULLRANK_CMDS, "clasificacioncompleta"), (PORRA_CMDS, "miporra"),
                    (COMPARE_CMDS, "comparar"), (PREDRESTO_CMDS, "prediccionesdelresto"),
+                   (VERSUPORRA_CMDS, "versuporra"),
                    (MUTE_CMDS, "silencio"),
                    (UNMUTE_CMDS, "avisos"), (HELP_CMDS, "ayuda"),
                    (WEB_CMDS, "web"), (ADMIN_CMDS, "usuarios"),
@@ -524,11 +526,11 @@ def _gol_line(etq, name, predicted, goals_map):
     return "{}: {}{}".format(etq, name, suf)
 
 
-def cmd_miporra(token, cid, p, goals_map=None, porras=None):
+def cmd_miporra(token, cid, p, goals_map=None, porras=None, title="Tu porra"):
     if not p:
-        send(token, cid, "No encuentro tu porra.")
+        send(token, cid, "No encuentro esa porra.")
         return
-    lines = ["<b>Tu porra</b>"]
+    lines = ["<b>{}</b>".format(title)]
     if p.get("mvp"):
         lines.append("🏆 MVP: " + p["mvp"])
     if p.get("gol1"):
@@ -809,6 +811,7 @@ def do_compare(token, cid, my_pid, text, porras, user):
         user["awaiting_compare"] = True
         send(token, cid, "Hay varios con ese nombre. Añade el apellido, por favor.")
     elif len(cands) == 1:
+        user["last_compared"] = cands[0]["id"]
         do_compare_pid(token, cid, my_pid, cands[0]["id"], porras)
     else:
         send(token, cid, "¿Con cuál quieres comparar?", reply_markup=compare_keyboard(cands))
@@ -977,6 +980,7 @@ def do_compare_pid(token, cid, my_pid, other_pid, porras):
         if only_th:
             lines.append("🔴 solo {}: {}".format(other_name, _flags(only_th)))
     lines.append("\n<i>tú / {}  ·  en 16avos, en negrita donde discrepáis</i>".format(other_name))
+    lines.append("\nVer su porra entera: /versuporra")
     send(token, cid, "\n".join(lines))
 
 
@@ -1099,6 +1103,7 @@ def process_chat(token, porras, state, updates):
             data = cq.get("data", "")
             if data.startswith("cmp:"):
                 if u.get("confirmed"):
+                    u["last_compared"] = int(data[4:])
                     do_compare_pid(token, cid, u["pid"], int(data[4:]), porras)
                 continue
             if data == "cmpmode:otros":
@@ -1182,6 +1187,13 @@ def process_chat(token, porras, state, updates):
                 cmd_ranking_full(token, cid, u["pid"], porras)
             elif cmd in PREDRESTO_CMDS:
                 cmd_predicciones_resto(token, cid, u, porras)
+            elif cmd in VERSUPORRA_CMDS:
+                op = by_id.get(u.get("last_compared"))
+                if op:
+                    cmd_miporra(token, cid, op, (state.get("scorers") or {}).get("goals"), porras,
+                                title="Porra de " + display_name(op.get("nombre"), op.get("apellidos")))
+                else:
+                    send(token, cid, "Primero compárate con alguien: /comparar")
             elif cmd in PORRA_CMDS:
                 cmd_miporra(token, cid, by_id.get(u["pid"]) or {},
                             (state.get("scorers") or {}).get("goals"), porras)
