@@ -382,6 +382,8 @@ FULLRANK_CMDS = ("/clasificacioncompleta", "/completa", "/todos")
 PORRA_CMDS = ("/miporra", "/porra", "/pronosticos")
 PREDRESTO_CMDS = ("/prediccionesdelresto", "/predicciones", "/resto")
 VERSUPORRA_CMDS = ("/versuporra", "/suporra")
+PROBGANAR_CMDS = ("/probabilidadganar", "/probabilidades", "/prob")
+PORQUE_CMDS = ("/porque", "/porqué")
 MUTE_CMDS = ("/silencio", "/mute", "/pausa")
 UNMUTE_CMDS = ("/avisos", "/activar", "/voz", "/reanudar")
 HELP_CMDS = ("/ayuda", "/help", "/comandos")
@@ -396,7 +398,8 @@ CMD_LABEL = {}
 for _grp, _lbl in [(RESET_CMDS, "start"), (RANK_CMDS, "clasificacion"),
                    (FULLRANK_CMDS, "clasificacioncompleta"), (PORRA_CMDS, "miporra"),
                    (COMPARE_CMDS, "comparar"), (PREDRESTO_CMDS, "prediccionesdelresto"),
-                   (VERSUPORRA_CMDS, "versuporra"),
+                   (VERSUPORRA_CMDS, "versuporra"), (PROBGANAR_CMDS, "probabilidadganar"),
+                   (PORQUE_CMDS, "porque"),
                    (MUTE_CMDS, "silencio"),
                    (UNMUTE_CMDS, "avisos"), (HELP_CMDS, "ayuda"),
                    (WEB_CMDS, "web"), (ADMIN_CMDS, "usuarios"),
@@ -409,6 +412,7 @@ AYUDA = ("<b>Comandos</b>\n"
          "/miporra — tus pronósticos y próximos partidos\n"
          "/compararprediccion — comparar tus pronósticos con otro\n"
          "/prediccionesdelresto — las predicciones de todos para un partido\n"
+         "/probabilidadganar — clasificación estimada (15.000 simulaciones)\n"
          "/silencio — pausar los avisos\n"
          "/avisos — reactivar los avisos\n"
          "/web — abrir la web de la porra\n"
@@ -421,6 +425,7 @@ BOT_COMMANDS = [
     {"command": "miporra", "description": "Tus pronósticos y próximos partidos"},
     {"command": "compararprediccion", "description": "Comparar tus pronósticos con otro"},
     {"command": "prediccionesdelresto", "description": "Las predicciones de todos para un partido"},
+    {"command": "probabilidadganar", "description": "Clasificación estimada (simulación)"},
     {"command": "silencio", "description": "Pausar los avisos"},
     {"command": "avisos", "description": "Reactivar los avisos"},
     {"command": "web", "description": "Abrir la web de la porra"},
@@ -798,6 +803,39 @@ def cmd_predicciones_resto(token, cid, u, porras):
     played = (m.get("status") or "").lower() in FINISHED_ST
     ko_list = ko_results_list(matches) if played else None
     send(token, cid, predicciones_resto(porras, home, away, pfx, slot, played, ko_list))
+
+
+def load_probs():
+    """Lee probs.json (simulación Monte Carlo precalculada con la clasificación estimada)."""
+    try:
+        with open(os.path.join(HERE, "probs.json"), encoding="utf-8") as f:
+            return json.load(f)
+    except Exception as e:
+        print("probs.json error:", e, file=sys.stderr)
+        return None
+
+
+def cmd_probganar(token, cid, pid):
+    d = load_probs()
+    if not d:
+        send(token, cid, "Las probabilidades no están disponibles ahora mismo.")
+        return
+    lines = ["<b>PROBABILIDAD DE GANAR LA PORRA</b>",
+             "<i>15.000 simulaciones · {}</i>".format(d.get("estado", "")), ""]
+    for i, (p, name, pw) in enumerate(d["lista"]):
+        row = "{}º · {}% · {}".format(i + 1, pw, name)
+        lines.append("<b>{}</b> 👈".format(row) if p == pid else row)
+    lines.append("\nEl porqué de tu posición: /porque")
+    send(token, cid, "\n".join(lines))
+
+
+def cmd_porque(token, cid, pid):
+    d = load_probs()
+    why = (d or {}).get("why", {}).get(str(pid))
+    if not why:
+        send(token, cid, "No tengo tu análisis ahora mismo. Prueba /probabilidadganar.")
+        return
+    send(token, cid, why + "\n\n" + d.get("claves", ""))
 
 
 def do_compare(token, cid, my_pid, text, porras, user):
@@ -1187,6 +1225,10 @@ def process_chat(token, porras, state, updates):
                 cmd_ranking_full(token, cid, u["pid"], porras)
             elif cmd in PREDRESTO_CMDS:
                 cmd_predicciones_resto(token, cid, u, porras)
+            elif cmd in PROBGANAR_CMDS:
+                cmd_probganar(token, cid, u["pid"])
+            elif cmd in PORQUE_CMDS:
+                cmd_porque(token, cid, u["pid"])
             elif cmd in VERSUPORRA_CMDS:
                 op = by_id.get(u.get("last_compared"))
                 if op:
