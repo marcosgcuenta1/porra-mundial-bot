@@ -478,7 +478,7 @@ def main():
     out = {"gen": now_es.strftime("%d/%m %H:%M"),
            "estado": "actualizado {} · tras {} de 22 partidos de eliminatoria".format(
                now_es.strftime("%d/%m %H:%M"), n_fin),
-           "n_finished": n_fin, "claves": claves,
+           "n_finished": n_fin, "sims": N_SIMS, "claves": claves,
            "lista": [[pl["pid"], pl["name"], pct(wins.get(pl["pid"], 0) / N_SIMS)] for pl in by_prob],
            "why": {str(pl["pid"]): why(pl) for pl in players}}
     tmp = OUT + ".tmp"

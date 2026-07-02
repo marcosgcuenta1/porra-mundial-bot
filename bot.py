@@ -412,7 +412,7 @@ AYUDA = ("<b>Comandos</b>\n"
          "/miporra — tus pronósticos y próximos partidos\n"
          "/compararprediccion — comparar tus pronósticos con otro\n"
          "/prediccionesdelresto — las predicciones de todos para un partido\n"
-         "/probabilidadganar — clasificación estimada (15.000 simulaciones)\n"
+         "/probabilidadganar — clasificación estimada (12.000 simulaciones)\n"
          "/silencio — pausar los avisos\n"
          "/avisos — reactivar los avisos\n"
          "/web — abrir la web de la porra\n"
@@ -881,7 +881,9 @@ def cmd_probganar(token, cid, pid):
         send(token, cid, "Las probabilidades no están disponibles ahora mismo.")
         return
     lines = ["<b>PROBABILIDAD DE GANAR LA PORRA</b>",
-             "<i>15.000 simulaciones · {}</i>".format(d.get("estado", "")), ""]
+             "<i>{} simulaciones · {}</i>".format(
+                 "{:,}".format(d.get("sims", 12000)).replace(",", "."),
+                 d.get("estado", "")), ""]
     for i, (p, name, pw) in enumerate(d["lista"]):
         row = "{}º · {}% · {}".format(i + 1, pw, name)
         lines.append("<b>{}</b> 👈".format(row) if p == pid else row)
