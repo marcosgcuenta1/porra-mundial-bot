@@ -1139,8 +1139,10 @@ def _esp(iso, with_time=False):
 
 
 def cmd_usuarios(token, cid, state):
-    """Resumen de uso (solo admin): quién, cuánta actividad y qué comandos usan."""
-    us = [u for u in state["users"].values() if u.get("confirmed")]
+    """Resumen de uso (solo admin): quién, cuánta actividad y qué comandos usan.
+    Excluye al propio admin (Marcos): sus pruebas desvirtuarían las métricas."""
+    us = [u for ucid, u in state["users"].items()
+          if u.get("confirmed") and ucid != ADMIN_CHAT_ID]
     total = sum(u.get("msgs", 0) for u in us)
     hoy = datetime.now(ESP_TZ).strftime("%d/%m")
     activos = sum(1 for u in us if _esp(u.get("last_active")) == hoy)
