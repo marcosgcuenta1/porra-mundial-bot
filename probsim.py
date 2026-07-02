@@ -30,9 +30,12 @@ ROUND_OF = {"round of 32": "c", "round of 16": "oct", "quarterfinals": "qf",
             "quarter-finals": "qf", "semifinals": "sf", "semi-finals": "sf",
             "final": "fin2", "match for 3rd place": "p3f", "3rd place final": "p3f"}
 
-R = {"ESP": 2060, "FRA": 2010, "ARG": 2000, "ENG": 1970, "BRA": 1950, "POR": 1935,
-     "MAR": 1870, "BEL": 1860, "CRO": 1855, "COL": 1840, "NOR": 1830, "MEX": 1805,
-     "AUT": 1800, "SUI": 1790, "USA": 1790, "CAN": 1755, "PAR": 1745, "ALG": 1720,
+# Ratings CALIBRADOS a las cuotas reales de campeón (FanDuel vía FOX Sports, 1-jul-2026,
+# devig proporcional): con ellos la simulación reproduce el mercado con error <0,3 pp
+# (FRA 30% · ARG 17% · ESP 11% · ENG 9% · BRA 8% · POR 5% · MAR 4%...).
+R = {"FRA": 2029, "ESP": 1987, "ARG": 1977, "ENG": 1956, "POR": 1946, "BRA": 1944,
+     "AUT": 1903, "USA": 1900, "MEX": 1898, "BEL": 1886, "MAR": 1885, "NOR": 1885,
+     "COL": 1869, "CRO": 1855, "SUI": 1830, "CAN": 1755, "PAR": 1745, "ALG": 1720,
      "EGY": 1705, "GHA": 1690, "AUS": 1690, "SWE": 1750, "SEN": 1780, "ECU": 1780,
      "BIH": 1640, "COD": 1600, "JPN": 1760, "NED": 1920, "GER": 1900, "RSA": 1650,
      "CIV": 1740, "CPV": 1565}
