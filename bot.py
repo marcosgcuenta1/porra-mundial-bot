@@ -884,8 +884,10 @@ def cmd_probganar(token, cid, pid):
              "<i>{} simulaciones · {}</i>".format(
                  "{:,}".format(d.get("sims", 12000)).replace(",", "."),
                  d.get("estado", "")), ""]
-    for i, (p, name, pw) in enumerate(d["lista"]):
-        row = "{}º · {}% · {}".format(i + 1, pw, name)
+    for i, r in enumerate(d["lista"]):
+        p, name, pw = r[0], r[1], r[2]
+        podio = " (podio {}%)".format(r[3]) if len(r) > 3 else ""
+        row = "{}º · {}%{} · {}".format(i + 1, pw, podio, name)
         lines.append("<b>{}</b> 👈".format(row) if p == pid else row)
     lines.append("\nEl porqué de tu posición: /porque")
     send(token, cid, "\n".join(lines))
@@ -1145,10 +1147,14 @@ def cmd_usuarios(token, cid, state):
     lines = ["<b>👥 USUARIOS ({})</b>".format(len(us)),
              "Mensajes: {} · activos hoy: {}".format(total, activos),
              "━━━━━━━━━━━━━━━━"]
+    d = load_probs() or {}
+    prob_pos = {row[0]: (i + 1, row[2]) for i, row in enumerate(d.get("lista", []))}
     for u in sorted(us, key=lambda x: -x.get("msgs", 0)):
-        lines.append("{} · alta {} · {} msg · últ {}".format(
+        pos, pw = prob_pos.get(u.get("pid"), (None, None))
+        prob_txt = " · prob {}º ({}%)".format(pos, pw) if pos else ""
+        lines.append("{} · alta {} · {} msg · últ {}{}".format(
             u.get("name"), _esp(u.get("first_seen")), u.get("msgs", 0),
-            _esp(u.get("last_active"), True)))
+            _esp(u.get("last_active"), True), prob_txt))
     agg = {}
     for u in us:
         for k, v in (u.get("cmds") or {}).items():
