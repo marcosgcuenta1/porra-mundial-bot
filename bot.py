@@ -815,6 +815,37 @@ def load_probs():
         return None
 
 
+_probsim = {"proc": None, "ts": 0.0}
+
+
+def launch_probsim():
+    """Recalcula las probabilidades en segundo plano (probsim.py). No bloquea el loop;
+    como mucho un proceso a la vez y con 10 min de margen entre lanzamientos."""
+    p = _probsim["proc"]
+    if p is not None and p.poll() is None:
+        return
+    if time.monotonic() - _probsim["ts"] < 600:
+        return
+    try:
+        _probsim["proc"] = subprocess.Popen([sys.executable, os.path.join(HERE, "probsim.py")],
+                                            cwd=HERE)
+        _probsim["ts"] = time.monotonic()
+        print("probsim lanzado en segundo plano.")
+    except Exception as e:
+        print("probsim launch error:", e, file=sys.stderr)
+
+
+def probs_stale(matches):
+    """True si probs.json no refleja los partidos de KO ya terminados."""
+    d = load_probs()
+    if not d:
+        return True
+    n = sum(1 for m in matches
+            if KO_MAP.get((m.get("round_name") or "").strip().lower())
+            and (m.get("status") or "").lower() in FINISHED_ST and _match_winner(m))
+    return n != d.get("n_finished")
+
+
 def cmd_probganar(token, cid, pid):
     d = load_probs()
     if not d:
@@ -1989,6 +2020,14 @@ def check_matches(token, porras, state):
             final_set.add(mid)
             state["final"].append(mid)
             persist(state, force=True)
+
+    # Probabilidades: recalcular en segundo plano si no reflejan los partidos ya jugados
+    # (cubre tanto el final que acaba de enviarse como huecos de cuando el bot estuvo caído).
+    try:
+        if probs_stale(matches):
+            launch_probsim()
+    except Exception as e:
+        print("probs_stale error:", e, file=sys.stderr)
 
     return enviados
 

@@ -1,22 +1,23 @@
 {
- "gen": "2026-07-02",
- "estado": "tras 10 de 16 dieciseisavos",
- "claves": "<b>Las claves de la porra</b>\n• Iván es el favorito pese a ir 2º: cláusula de desempate + Francia campeona (solo 13 la tienen) + MVP Mbappé.\n• La sorpresa es Bautista (12º): de los únicos 4 con Argentina campeona, y el cuadro real le favorece — el lado argentino es el más blando.\n• 28 de 46 tenéis a España campeona: si gana, casi no mueve la clasificación entre vosotros; deciden los cruces, el subcampeón, el MVP y los pichichis.\n• 35 de 46 tenéis a Mbappé pichichi (lleva 6): el desempate real está en clavar SU número exacto de goles.\n• P(campeón) simulada: 🇪🇸 26% · 🇫🇷 22% · 🇦🇷 19% · 🏴󠁧󠁢󠁥󠁮󠁧󠁿 12% · 🇧🇷 9%.",
+ "gen": "02/07 13:24",
+ "estado": "actualizado 02/07 13:24 · tras 10 de 22 partidos de eliminatoria",
+ "n_finished": 10,
+ "claves": "<b>Las claves de la porra</b>\n• Favorito: Ivan Gomez Peral (2º en la tabla real) — la cláusula de desempate + Francia campeona (solo 13 la tienen).\n• La sorpresa: Bautista Thomas Oriol (va 12º pero es 2º en probabilidad) — su porra se diferencia donde otros van en manada.\n• 28 de 46 tenéis a España campeona: si gana, casi no mueve la clasificación entre vosotros; deciden cruces, subcampeón, MVP y pichichis.\n• 35 de 46 tenéis a Kylian Mbappe de pichichi (lleva 6): el desempate real está en clavar SU número exacto de goles.\n• P(campeón): 🇪🇸 25,6 · 🇫🇷 22,3 · 🇦🇷 19,3 · 🏴󠁧󠁢󠁥󠁮󠁧󠁿 11,6 · 🇧🇷 8,3%",
  "lista": [
   [
    67,
    "Ivan Gomez Peral",
-   "13,4"
+   "14,2"
   ],
   [
    69,
    "Bautista Thomas Oriol",
-   "10,9"
+   "10,3"
   ],
   [
    64,
    "Martin Gutierrez Carcedo",
-   "8,3"
+   "7,9"
   ],
   [
    62,
@@ -26,32 +27,32 @@
   [
    45,
    "Alberto Pardo Ortiz",
-   "4,5"
+   "5,1"
   ],
   [
    20,
    "Marcos Gracia Arrondo",
-   "4,1"
+   "4,3"
   ],
   [
    48,
    "Roberto Oliva Pastor",
-   "4,1"
-  ],
-  [
-   72,
-   "Raul Diaz",
-   "3,5"
+   "4,2"
   ],
   [
    39,
    "Fernando Borreguero Navarro",
+   "3,5"
+  ],
+  [
+   72,
+   "Raul Diaz",
    "3,4"
   ],
   [
    50,
    "Alejandro Perez Manrique",
-   "3,2"
+   "2,9"
   ],
   [
    57,
@@ -59,24 +60,19 @@
    "2,7"
   ],
   [
+   29,
+   "Marcel Gutierrez Guerrero",
+   "2,7"
+  ],
+  [
    75,
    "Almudena Munoz Lara",
-   "2,5"
+   "2,6"
   ],
   [
    65,
    "Damian Martinez Avila",
-   "2,5"
-  ],
-  [
-   29,
-   "Marcel Gutierrez Guerrero",
-   "2,4"
-  ],
-  [
-   33,
-   "Vito Tomas Zaccaria",
-   "2,2"
+   "2,3"
   ],
   [
    51,
@@ -84,14 +80,24 @@
    "2,0"
   ],
   [
+   46,
+   "Miguel Cousillas Padin",
+   "1,9"
+  ],
+  [
    74,
    "Anton Fernandez Almiron",
    "1,9"
   ],
   [
-   46,
-   "Miguel Cousillas Padin",
-   "1,8"
+   33,
+   "Vito Tomas Zaccaria",
+   "1,7"
+  ],
+  [
+   49,
+   "Ivan Dolera Ramos",
+   "1,7"
   ],
   [
    71,
@@ -99,39 +105,39 @@
    "1,5"
   ],
   [
-   49,
-   "Ivan Dolera Ramos",
-   "1,5"
-  ],
-  [
    22,
    "Bryan Da Silva Brito",
-   "1,5"
-  ],
-  [
-   58,
-   "Daniel Delgado Marquez",
    "1,4"
   ],
   [
    66,
    "Matias Portus Jil",
-   "1,3"
+   "1,4"
   ],
   [
    32,
    "Ignacio Valencia Calatayud",
-   "1,3"
+   "1,2"
+  ],
+  [
+   58,
+   "Daniel Delgado Marquez",
+   "1,2"
   ],
   [
    76,
    "Mario Romero",
-   "1,3"
+   "1,2"
+  ],
+  [
+   40,
+   "Salud Maestre",
+   "1,2"
   ],
   [
    41,
    "Javier Perez Lozano",
-   "1,1"
+   "1,0"
   ],
   [
    31,
@@ -141,11 +147,6 @@
   [
    68,
    "Nacho Gordo",
-   "1,0"
-  ],
-  [
-   40,
-   "Salud Maestre",
    "0,9"
   ],
   [
@@ -154,9 +155,14 @@
    "0,8"
   ],
   [
+   27,
+   "Pablo Conderana Medem",
+   "0,8"
+  ],
+  [
    17,
    "Jorge Garcia Serrano",
-   "0,8"
+   "0,7"
   ],
   [
    61,
@@ -164,14 +170,9 @@
    "0,7"
   ],
   [
-   27,
-   "Pablo Conderana Medem",
-   "0,7"
-  ],
-  [
-   24,
-   "Cesar Esteban Garcia",
-   "0,7"
+   55,
+   "Alejandro Garcia Cuadrado",
+   "0,5"
   ],
   [
    52,
@@ -179,9 +180,19 @@
    "0,5"
   ],
   [
-   55,
-   "Alejandro Garcia Cuadrado",
+   24,
+   "Cesar Esteban Garcia",
    "0,5"
+  ],
+  [
+   19,
+   "Oscar Gonzalez Gonzalez-Cano",
+   "0,5"
+  ],
+  [
+   63,
+   "Daniel Alameda Badurak",
+   "0,4"
   ],
   [
    43,
@@ -189,13 +200,8 @@
    "0,4"
   ],
   [
-   19,
-   "Oscar Gonzalez Gonzalez-Cano",
-   "0,4"
-  ],
-  [
-   63,
-   "Daniel Alameda Badurak",
+   28,
+   "Jaime Nunez Grandes",
    "0,4"
   ],
   [
@@ -204,18 +210,13 @@
    "0,3"
   ],
   [
-   28,
-   "Jaime Nunez Grandes",
+   42,
+   "Jorge Verdeal Castello",
    "0,3"
   ],
   [
    53,
    "Emilio Pareja Flores",
-   "0,3"
-  ],
-  [
-   42,
-   "Jorge Verdeal Castello",
    "0,2"
   ],
   [
@@ -231,55 +232,55 @@
   [
    21,
    "Sergio Querol Garcia",
-   "0,0"
+   "0,1"
   ]
  ],
  "why": {
-  "17": "Vas 6º con 190 puntos. Probabilidad de ganar la porra: <b>0,8%</b> (31º más probable) · top 3: 3,8%.\nTu campeona es España, como otros 27 — si gana, media porra sube contigo y apenas te diferencia.\nTu MVP (Vitinha) lo compartís 3 — acertarlo te da poco filo.\nTu pichichi (Harry Kane) es apuesta rara — 3 más lo tienen; si pasa, casi nadie te acompaña en esos 20-40 puntos.",
-  "19": "Vas 33º con 169 puntos. Probabilidad de ganar la porra: <b>0,4%</b> (38º más probable) · top 3: 1,6%.\nTu campeona es España, como otros 27 — si gana, media porra sube contigo y apenas te diferencia.\nTu MVP (Lamine Yamal) lo compartís 16 — acertarlo te da poco filo.\nTu pichichi (Mikel Oyarzabal) es apuesta rara — 3 más lo tienen; si pasa, casi nadie te acompaña en esos 20-40 puntos.\nNecesitas una carambola: que tus aciertos diferenciales salgan Y que pinchen todos los que van por delante con tus mismas elecciones.",
-  "20": "Vas 15º con 179 puntos. Probabilidad de ganar la porra: <b>4,1%</b> (6º más probable) · top 3: 10,6%.\nTu campeona es España, como otros 27 — si gana, media porra sube contigo y apenas te diferencia.\nTu MVP (Lamine Yamal) lo compartís 16 — acertarlo te da poco filo.\nPichichi Mbappé como 34 más; tu cifra de 10 goles es difícil (lleva 6).",
-  "21": "Vas 44º con 143 puntos. Probabilidad de ganar la porra: <b>0,0%</b> (46º más probable) · top 3: 0,2%.\nTu campeona es España, como otros 27 — si gana, media porra sube contigo y apenas te diferencia.\nTu MVP (Pedri) lo compartís 8 — acertarlo te da poco filo.\nTu pichichi (Mikel Oyarzabal) es apuesta rara — 3 más lo tienen; si pasa, casi nadie te acompaña en esos 20-40 puntos.\nNecesitas una carambola: que tus aciertos diferenciales salgan Y que pinchen todos los que van por delante con tus mismas elecciones.",
-  "22": "Vas 7º con 189 puntos. Probabilidad de ganar la porra: <b>1,5%</b> (21º más probable) · top 3: 8,2%.\nTu campeona es Francia (solo 13 la tenéis, 21,6% en la simulación): si gana, adelantas de golpe a la mayoría, que va con España.\nTu MVP (Vitinha) lo compartís 3 — acertarlo te da poco filo.\nPichichi Mbappé como 34 más; tu cifra de 6 goles es muy alcanzable (lleva 6) — ese +20 extra puede decidir.",
-  "24": "Vas 28º con 172 puntos. Probabilidad de ganar la porra: <b>0,7%</b> (34º más probable) · top 3: 2,1%.\nTu campeona es España, como otros 27 — si gana, media porra sube contigo y apenas te diferencia.\nTu MVP (Lamine Yamal) lo compartís 16 — acertarlo te da poco filo.\nPichichi Mbappé como 34 más; tu cifra de 8 goles es muy alcanzable (lleva 6) — ese +20 extra puede decidir.",
-  "25": "Vas 24º con 175 puntos. Probabilidad de ganar la porra: <b>0,8%</b> (30º más probable) · top 3: 3,2%.\nTu campeona es España, como otros 27 — si gana, media porra sube contigo y apenas te diferencia.\nTu MVP (Lamine Yamal) lo compartís 16 — acertarlo te da poco filo.\nTu pichichi (Harry Kane) es apuesta rara — 3 más lo tienen; si pasa, casi nadie te acompaña en esos 20-40 puntos.",
-  "26": "Vas 39º con 162 puntos. Probabilidad de ganar la porra: <b>0,3%</b> (40º más probable) · top 3: 1,2%.\nTu campeona es España, como otros 27 — si gana, media porra sube contigo y apenas te diferencia.\nTu MVP (Pedri) lo compartís 8 — acertarlo te da poco filo.\nPichichi Mbappé como 34 más; tu cifra de 6 goles es muy alcanzable (lleva 6) — ese +20 extra puede decidir.\nNecesitas una carambola: que tus aciertos diferenciales salgan Y que pinchen todos los que van por delante con tus mismas elecciones.",
-  "27": "Vas 35º con 166 puntos. Probabilidad de ganar la porra: <b>0,7%</b> (33º más probable) · top 3: 3,0%.\nTu campeona es España, como otros 27 — si gana, media porra sube contigo y apenas te diferencia.\nTu MVP (Lamine Yamal) lo compartís 16 — acertarlo te da poco filo.\nPichichi Mbappé como 34 más; tu cifra de 9 goles es muy alcanzable (lleva 6) — ese +20 extra puede decidir.",
-  "28": "Vas 27º con 173 puntos. Probabilidad de ganar la porra: <b>0,3%</b> (41º más probable) · top 3: 2,0%.\nTu campeona es España, como otros 27 — si gana, media porra sube contigo y apenas te diferencia.\nTu MVP (Lamine Yamal) lo compartís 16 — acertarlo te da poco filo.\nPichichi Mbappé como 34 más; tu cifra de 7 goles es muy alcanzable (lleva 6) — ese +20 extra puede decidir.\nNecesitas una carambola: que tus aciertos diferenciales salgan Y que pinchen todos los que van por delante con tus mismas elecciones.",
-  "29": "Vas 36º con 166 puntos. Probabilidad de ganar la porra: <b>2,4%</b> (14º más probable) · top 3: 11,5%.\nTu campeona es Argentina y solo 4 la tenéis — es tu gran baza: su lado del cuadro es el más blando (¡19,4% de ser campeona!) y casi nadie la comparte.\nTu MVP (Vinicius Jr) casi no lo comparte nadie: si acierta, son 20 puntos que casi nadie más suma.\nPichichi Mbappé como 34 más; tu cifra de 8 goles es muy alcanzable (lleva 6) — ese +20 extra puede decidir.",
-  "31": "Vas 20º con 177 puntos. Probabilidad de ganar la porra: <b>1,0%</b> (27º más probable) · top 3: 4,0%.\nTu campeona es Francia (solo 13 la tenéis, 21,6% en la simulación): si gana, adelantas de golpe a la mayoría, que va con España.\nTu MVP (Kylian Mbappe) lo compartís 13 — acertarlo te da poco filo.\nPichichi Mbappé como 34 más; tu cifra de 7 goles es muy alcanzable (lleva 6) — ese +20 extra puede decidir.\nOjo: tus 4 cruces de 16avos bloqueados (porra tardía) no puntúan, vas con lastre respecto al resto.",
-  "32": "Vas 21º con 177 puntos. Probabilidad de ganar la porra: <b>1,3%</b> (24º más probable) · top 3: 4,9%.\nTu campeona es España, como otros 27 — si gana, media porra sube contigo y apenas te diferencia.\nTu MVP (Lamine Yamal) lo compartís 16 — acertarlo te da poco filo.\nPichichi Mbappé como 34 más; tu cifra de 6 goles es muy alcanzable (lleva 6) — ese +20 extra puede decidir.",
-  "33": "Vas 43º con 151 puntos. Probabilidad de ganar la porra: <b>2,2%</b> (15º más probable) · top 3: 3,3%.\nTu campeona es Portugal — solo tú la tienes; en la simulación gana el 4,0% de las veces, pero si sonara la flauta estarías casi solo en el premio gordo.\nTu MVP (Cristiano Ronaldo) casi no lo comparte nadie: si acierta, son 20 puntos que casi nadie más suma.\nPichichi Mbappé como 34 más; tu cifra de 6 goles es muy alcanzable (lleva 6) — ese +20 extra puede decidir.",
-  "38": "Vas 42º con 155 puntos. Probabilidad de ganar la porra: <b>0,1%</b> (45º más probable) · top 3: 1,1%.\nTu campeona es España, como otros 27 — si gana, media porra sube contigo y apenas te diferencia.\nTu MVP (Harry Kane) casi no lo comparte nadie: si acierta, son 20 puntos que casi nadie más suma.\nPichichi Mbappé como 34 más; tu cifra de 7 goles es muy alcanzable (lleva 6) — ese +20 extra puede decidir.\nNecesitas una carambola: que tus aciertos diferenciales salgan Y que pinchen todos los que van por delante con tus mismas elecciones.",
-  "39": "Vas 16º con 179 puntos. Probabilidad de ganar la porra: <b>3,4%</b> (9º más probable) · top 3: 7,7%.\nTu campeona es España, como otros 27 — si gana, media porra sube contigo y apenas te diferencia.\nTu MVP (Lamine Yamal) lo compartís 16 — acertarlo te da poco filo.\nTu pichichi (Harry Kane) es apuesta rara — 3 más lo tienen; si pasa, casi nadie te acompaña en esos 20-40 puntos.",
-  "40": "Vas 46º con 138 puntos. Probabilidad de ganar la porra: <b>0,9%</b> (29º más probable) · top 3: 4,2%.\nTu campeona es Argentina y solo 4 la tenéis — es tu gran baza: su lado del cuadro es el más blando (¡19,4% de ser campeona!) y casi nadie la comparte.\nTu MVP (Vinicius Jr) casi no lo comparte nadie: si acierta, son 20 puntos que casi nadie más suma.\nPichichi Mbappé como 34 más; tu cifra de 5 goles ya es imposible (lleva 6).",
-  "41": "Vas 19º con 178 puntos. Probabilidad de ganar la porra: <b>1,1%</b> (26º más probable) · top 3: 5,7%.\nTu campeona es España, como otros 27 — si gana, media porra sube contigo y apenas te diferencia.\nTu MVP (Kylian Mbappe) lo compartís 13 — acertarlo te da poco filo.\nPichichi Mbappé como 34 más; tu cifra de 8 goles es muy alcanzable (lleva 6) — ese +20 extra puede decidir.",
-  "42": "Vas 45º con 140 puntos. Probabilidad de ganar la porra: <b>0,2%</b> (43º más probable) · top 3: 0,9%.\nTu campeona es Francia (solo 13 la tenéis, 21,6% en la simulación): si gana, adelantas de golpe a la mayoría, que va con España.\nTu MVP (Bruno Fernandes) casi no lo comparte nadie: si acierta, son 20 puntos que casi nadie más suma.\nTu pichichi (Julian Alvarez) es apuesta rara — 0 más lo tienen; si pasa, casi nadie te acompaña en esos 20-40 puntos.\nNecesitas una carambola: que tus aciertos diferenciales salgan Y que pinchen todos los que van por delante con tus mismas elecciones.",
-  "43": "Vas 37º con 166 puntos. Probabilidad de ganar la porra: <b>0,4%</b> (37º más probable) · top 3: 1,8%.\nTu campeona es España, como otros 27 — si gana, media porra sube contigo y apenas te diferencia.\nTu MVP (Lamine Yamal) lo compartís 16 — acertarlo te da poco filo.\nTu pichichi (Lionel Messi) es apuesta rara — 0 más lo tienen; si pasa, casi nadie te acompaña en esos 20-40 puntos.\nNecesitas una carambola: que tus aciertos diferenciales salgan Y que pinchen todos los que van por delante con tus mismas elecciones.",
-  "44": "Vas 38º con 166 puntos. Probabilidad de ganar la porra: <b>0,2%</b> (44º más probable) · top 3: 1,3%.\nTu campeona es España, como otros 27 — si gana, media porra sube contigo y apenas te diferencia.\nTu MVP (Pedri) lo compartís 8 — acertarlo te da poco filo.\nPichichi Mbappé como 34 más; tu cifra de 8 goles es muy alcanzable (lleva 6) — ese +20 extra puede decidir.\nNecesitas una carambola: que tus aciertos diferenciales salgan Y que pinchen todos los que van por delante con tus mismas elecciones.",
-  "45": "Vas 3º con 199 puntos. Probabilidad de ganar la porra: <b>4,5%</b> (5º más probable) · top 3: 13,9%.\nTu campeona es Francia (solo 13 la tenéis, 21,6% en la simulación): si gana, adelantas de golpe a la mayoría, que va con España.\nTu MVP (Kylian Mbappe) lo compartís 13 — acertarlo te da poco filo.\nPichichi Mbappé como 34 más; tu cifra de 7 goles es muy alcanzable (lleva 6) — ese +20 extra puede decidir.",
-  "46": "Vas 22º con 177 puntos. Probabilidad de ganar la porra: <b>1,8%</b> (18º más probable) · top 3: 6,3%.\nTu campeona es España, como otros 27 — si gana, media porra sube contigo y apenas te diferencia.\nTu MVP (Lamine Yamal) lo compartís 16 — acertarlo te da poco filo.\nTu pichichi (Harry Kane) es apuesta rara — 3 más lo tienen; si pasa, casi nadie te acompaña en esos 20-40 puntos.",
-  "48": "Vas 11º con 183 puntos. Probabilidad de ganar la porra: <b>4,1%</b> (7º más probable) · top 3: 13,2%.\nTu campeona es España, como otros 27 — si gana, media porra sube contigo y apenas te diferencia.\nTu MVP (Kylian Mbappe) lo compartís 13 — acertarlo te da poco filo.\nPichichi Mbappé como 34 más; tu cifra de 9 goles es muy alcanzable (lleva 6) — ese +20 extra puede decidir.",
-  "49": "Vas 9º con 185 puntos. Probabilidad de ganar la porra: <b>1,5%</b> (20º más probable) · top 3: 5,8%.\nTu campeona es España, como otros 27 — si gana, media porra sube contigo y apenas te diferencia.\nTu MVP (Pedri) lo compartís 8 — acertarlo te da poco filo.\nPichichi Mbappé como 34 más; tu cifra de 7 goles es muy alcanzable (lleva 6) — ese +20 extra puede decidir.",
-  "50": "Vas 8º con 187 puntos. Probabilidad de ganar la porra: <b>3,2%</b> (10º más probable) · top 3: 8,7%.\nTu campeona es Francia (solo 13 la tenéis, 21,6% en la simulación): si gana, adelantas de golpe a la mayoría, que va con España.\nTu MVP (Kylian Mbappe) lo compartís 13 — acertarlo te da poco filo.\nPichichi Mbappé como 34 más; tu cifra de 7 goles es muy alcanzable (lleva 6) — ese +20 extra puede decidir.",
-  "51": "Vas 17º con 179 puntos. Probabilidad de ganar la porra: <b>2,0%</b> (16º más probable) · top 3: 6,6%.\nTu campeona es España, como otros 27 — si gana, media porra sube contigo y apenas te diferencia.\nTu MVP (Kylian Mbappe) lo compartís 13 — acertarlo te da poco filo.\nPichichi Mbappé como 34 más; tu cifra de 11 goles es difícil (lleva 6).",
-  "52": "Vas 4º con 196 puntos. Probabilidad de ganar la porra: <b>0,5%</b> (35º más probable) · top 3: 2,6%.\nTu campeona es España, como otros 27 — si gana, media porra sube contigo y apenas te diferencia.\nTu MVP (Pedri) lo compartís 8 — acertarlo te da poco filo.\nPichichi Mbappé como 34 más; tu cifra de 8 goles es muy alcanzable (lleva 6) — ese +20 extra puede decidir.",
-  "53": "Vas 40º con 162 puntos. Probabilidad de ganar la porra: <b>0,3%</b> (42º más probable) · top 3: 1,3%.\nTu campeona es España, como otros 27 — si gana, media porra sube contigo y apenas te diferencia.\nTu MVP (Vitinha) lo compartís 3 — acertarlo te da poco filo.\nTu pichichi (Mikel Oyarzabal) es apuesta rara — 3 más lo tienen; si pasa, casi nadie te acompaña en esos 20-40 puntos.\nNecesitas una carambola: que tus aciertos diferenciales salgan Y que pinchen todos los que van por delante con tus mismas elecciones.",
-  "55": "Vas 41º con 156 puntos. Probabilidad de ganar la porra: <b>0,5%</b> (36º más probable) · top 3: 2,3%.\nTu campeona es Francia (solo 13 la tenéis, 21,6% en la simulación): si gana, adelantas de golpe a la mayoría, que va con España.\nTu MVP (Pedri) lo compartís 8 — acertarlo te da poco filo.\nPichichi Mbappé como 34 más; tu cifra de 7 goles es muy alcanzable (lleva 6) — ese +20 extra puede decidir.\nNecesitas una carambola: que tus aciertos diferenciales salgan Y que pinchen todos los que van por delante con tus mismas elecciones.",
-  "57": "Vas 14º con 180 puntos. Probabilidad de ganar la porra: <b>2,7%</b> (11º más probable) · top 3: 8,2%.\nTu campeona es España, como otros 27 — si gana, media porra sube contigo y apenas te diferencia.\nTu MVP (Lamine Yamal) lo compartís 16 — acertarlo te da poco filo.\nPichichi Mbappé como 34 más; tu cifra de 8 goles es muy alcanzable (lleva 6) — ese +20 extra puede decidir.",
-  "58": "Vas 34º con 167 puntos. Probabilidad de ganar la porra: <b>1,4%</b> (22º más probable) · top 3: 4,1%.\nTu campeona es España, como otros 27 — si gana, media porra sube contigo y apenas te diferencia.\nTu MVP (Pedri) lo compartís 8 — acertarlo te da poco filo.\nPichichi Mbappé como 34 más; tu cifra de 7 goles es muy alcanzable (lleva 6) — ese +20 extra puede decidir.",
-  "61": "Vas 29º con 172 puntos. Probabilidad de ganar la porra: <b>0,7%</b> (32º más probable) · top 3: 3,1%.\nTu campeona es España, como otros 27 — si gana, media porra sube contigo y apenas te diferencia.\nTu MVP (Lamine Yamal) lo compartís 16 — acertarlo te da poco filo.\nTu pichichi (Mikel Oyarzabal) es apuesta rara — 3 más lo tienen; si pasa, casi nadie te acompaña en esos 20-40 puntos.",
-  "62": "Vas 13º con 181 puntos. Probabilidad de ganar la porra: <b>5,2%</b> (4º más probable) · top 3: 13,6%.\nTu campeona es Argentina y solo 4 la tenéis — es tu gran baza: su lado del cuadro es el más blando (¡19,4% de ser campeona!) y casi nadie la comparte.\nTu MVP (Kylian Mbappe) lo compartís 13 — acertarlo te da poco filo.\nPichichi Mbappé como 34 más; tu cifra de 8 goles es muy alcanzable (lleva 6) — ese +20 extra puede decidir.",
-  "63": "Vas 18º con 179 puntos. Probabilidad de ganar la porra: <b>0,4%</b> (39º más probable) · top 3: 1,4%.\nTu campeona es España, como otros 27 — si gana, media porra sube contigo y apenas te diferencia.\nTu MVP (Lamine Yamal) lo compartís 16 — acertarlo te da poco filo.\nTu pichichi (Lamine Yamal) es apuesta rara — 0 más lo tienen; si pasa, casi nadie te acompaña en esos 20-40 puntos.\nNecesitas una carambola: que tus aciertos diferenciales salgan Y que pinchen todos los que van por delante con tus mismas elecciones.",
-  "64": "Vas 1º con 212 puntos. Probabilidad de ganar la porra: <b>8,3%</b> (3º más probable) · top 3: 19,6%.\nTu campeona es España, como otros 27 — si gana, media porra sube contigo y apenas te diferencia.\nTu MVP (Kylian Mbappe) lo compartís 13 — acertarlo te da poco filo.\nPichichi Mbappé como 34 más; tu cifra de 8 goles es muy alcanzable (lleva 6) — ese +20 extra puede decidir.",
-  "65": "Vas 25º con 174 puntos. Probabilidad de ganar la porra: <b>2,5%</b> (13º más probable) · top 3: 8,6%.\nTu campeona es Francia (solo 13 la tenéis, 21,6% en la simulación): si gana, adelantas de golpe a la mayoría, que va con España.\nTu MVP (Kylian Mbappe) lo compartís 13 — acertarlo te da poco filo.\nPichichi Mbappé como 34 más; tu cifra de 8 goles es muy alcanzable (lleva 6) — ese +20 extra puede decidir.",
-  "66": "Vas 23º con 176 puntos. Probabilidad de ganar la porra: <b>1,3%</b> (23º más probable) · top 3: 5,5%.\nTu campeona es Francia (solo 13 la tenéis, 21,6% en la simulación): si gana, adelantas de golpe a la mayoría, que va con España.\nTu MVP (Kylian Mbappe) lo compartís 13 — acertarlo te da poco filo.\nPichichi Mbappé como 34 más; tu cifra de 9 goles es muy alcanzable (lleva 6) — ese +20 extra puede decidir.",
-  "67": "Vas 2º con 211 puntos. Probabilidad de ganar la porra: <b>13,4%</b> (1º más probable) · top 3: 32,9%.\nTu campeona es Francia (solo 13 la tenéis, 21,6% en la simulación): si gana, adelantas de golpe a la mayoría, que va con España.\nTu MVP (Kylian Mbappe) lo compartís 13 — acertarlo te da poco filo.\nPichichi Mbappé como 34 más; tu cifra de 7 goles es muy alcanzable (lleva 6) — ese +20 extra puede decidir.\nY tu as: la cláusula de desempate — ganas TODOS los empates a puntos.",
-  "68": "Vas 26º con 174 puntos. Probabilidad de ganar la porra: <b>1,0%</b> (28º más probable) · top 3: 3,7%.\nTu campeona es Francia (solo 13 la tenéis, 21,6% en la simulación): si gana, adelantas de golpe a la mayoría, que va con España.\nTu MVP (Lamine Yamal) lo compartís 16 — acertarlo te da poco filo.\nPichichi Mbappé como 34 más; tu cifra de 7 goles es muy alcanzable (lleva 6) — ese +20 extra puede decidir.",
-  "69": "Vas 12º con 182 puntos. Probabilidad de ganar la porra: <b>10,9%</b> (2º más probable) · top 3: 18,4%.\nTu campeona es Argentina y solo 4 la tenéis — es tu gran baza: su lado del cuadro es el más blando (¡19,4% de ser campeona!) y casi nadie la comparte.\nTu MVP (Lionel Messi) casi no lo comparte nadie: si acierta, son 20 puntos que casi nadie más suma.\nPichichi Mbappé como 34 más; tu cifra de 7 goles es muy alcanzable (lleva 6) — ese +20 extra puede decidir.",
-  "71": "Vas 10º con 185 puntos. Probabilidad de ganar la porra: <b>1,5%</b> (19º más probable) · top 3: 5,4%.\nTu campeona es España, como otros 27 — si gana, media porra sube contigo y apenas te diferencia.\nTu MVP (Pedri) lo compartís 8 — acertarlo te da poco filo.\nPichichi Mbappé como 34 más; tu cifra de 10 goles es difícil (lleva 6).",
-  "72": "Vas 5º con 193 puntos. Probabilidad de ganar la porra: <b>3,5%</b> (8º más probable) · top 3: 11,8%.\nTu campeona es Francia (solo 13 la tenéis, 21,6% en la simulación): si gana, adelantas de golpe a la mayoría, que va con España.\nTu MVP (Lamine Yamal) lo compartís 16 — acertarlo te da poco filo.\nPichichi Mbappé como 34 más; tu cifra de 6 goles es muy alcanzable (lleva 6) — ese +20 extra puede decidir.",
-  "74": "Vas 30º con 172 puntos. Probabilidad de ganar la porra: <b>1,9%</b> (17º más probable) · top 3: 6,1%.\nTu campeona es Francia (solo 13 la tenéis, 21,6% en la simulación): si gana, adelantas de golpe a la mayoría, que va con España.\nTu MVP (Kylian Mbappe) lo compartís 13 — acertarlo te da poco filo.\nPichichi Mbappé como 34 más; tu cifra de 9 goles es muy alcanzable (lleva 6) — ese +20 extra puede decidir.",
-  "75": "Vas 32º con 171 puntos. Probabilidad de ganar la porra: <b>2,5%</b> (12º más probable) · top 3: 8,1%.\nTu campeona es España, como otros 27 — si gana, media porra sube contigo y apenas te diferencia.\nTu MVP (Lamine Yamal) lo compartís 16 — acertarlo te da poco filo.\nPichichi Mbappé como 34 más; tu cifra de 10 goles es difícil (lleva 6).",
-  "76": "Vas 31º con 172 puntos. Probabilidad de ganar la porra: <b>1,3%</b> (25º más probable) · top 3: 6,2%.\nTu campeona es Francia (solo 13 la tenéis, 21,6% en la simulación): si gana, adelantas de golpe a la mayoría, que va con España.\nTu MVP (Kylian Mbappe) lo compartís 13 — acertarlo te da poco filo.\nPichichi Mbappé como 34 más; tu cifra de 6 goles es muy alcanzable (lleva 6) — ese +20 extra puede decidir."
+  "17": "Vas 6º con 190 puntos. Probabilidad de ganar la porra: <b>0,7%</b> (32º más probable) · top 3: 3,9%.\nTu campeona es España, como otros 27 — si gana, media porra sube contigo y apenas te diferencia.\nTu MVP (Vitinha) lo compartís 3 — acertarlo te da poco filo.\nPichichi Harry Kane como 3 más; tu cifra de 6 goles es alcanzable (lleva 5) — ese +20 extra puede decidir.",
+  "19": "Vas 33º con 169 puntos. Probabilidad de ganar la porra: <b>0,5%</b> (37º más probable) · top 3: 1,6%.\nTu campeona es España, como otros 27 — si gana, media porra sube contigo y apenas te diferencia.\nTu MVP (Lamine Yamal) lo compartís 16 — acertarlo te da poco filo.\nPichichi Mikel Oyarzabal como 3 más; tu cifra de 6 goles es difícil (lleva 2).\nNecesitas una carambola: que tus aciertos diferenciales salgan Y que pinchen todos los que van por delante con tus mismas elecciones.",
+  "20": "Vas 15º con 179 puntos. Probabilidad de ganar la porra: <b>4,3%</b> (6º más probable) · top 3: 11,0%.\nTu campeona es España, como otros 27 — si gana, media porra sube contigo y apenas te diferencia.\nTu MVP (Lamine Yamal) lo compartís 16 — acertarlo te da poco filo.\nPichichi Kylian Mbappe como 34 más; tu cifra de 10 goles es difícil (lleva 6).",
+  "21": "Vas 44º con 143 puntos. Probabilidad de ganar la porra: <b>0,1%</b> (46º más probable) · top 3: 0,2%.\nTu campeona es España, como otros 27 — si gana, media porra sube contigo y apenas te diferencia.\nTu MVP (Pedri) lo compartís 8 — acertarlo te da poco filo.\nPichichi Mikel Oyarzabal como 3 más; tu cifra de 9 goles es difícil (lleva 2).\nNecesitas una carambola: que tus aciertos diferenciales salgan Y que pinchen todos los que van por delante con tus mismas elecciones.",
+  "22": "Vas 7º con 189 puntos. Probabilidad de ganar la porra: <b>1,4%</b> (21º más probable) · top 3: 8,2%.\nTu campeona es Francia (solo 13 la tenéis, 22,3% en la simulación): si gana, adelantas de golpe a la mayoría.\nTu MVP (Vitinha) lo compartís 3 — acertarlo te da poco filo.\nPichichi Kylian Mbappe como 34 más; tu cifra de 6 goles es alcanzable (lleva 6) — ese +20 extra puede decidir.",
+  "24": "Vas 28º con 172 puntos. Probabilidad de ganar la porra: <b>0,5%</b> (36º más probable) · top 3: 1,8%.\nTu campeona es España, como otros 27 — si gana, media porra sube contigo y apenas te diferencia.\nTu MVP (Lamine Yamal) lo compartís 16 — acertarlo te da poco filo.\nPichichi Kylian Mbappe como 34 más; tu cifra de 8 goles es alcanzable (lleva 6) — ese +20 extra puede decidir.\nNecesitas una carambola: que tus aciertos diferenciales salgan Y que pinchen todos los que van por delante con tus mismas elecciones.",
+  "25": "Vas 24º con 175 puntos. Probabilidad de ganar la porra: <b>0,8%</b> (30º más probable) · top 3: 3,1%.\nTu campeona es España, como otros 27 — si gana, media porra sube contigo y apenas te diferencia.\nTu MVP (Lamine Yamal) lo compartís 16 — acertarlo te da poco filo.\nPichichi Harry Kane como 3 más; tu cifra de 6 goles es alcanzable (lleva 5) — ese +20 extra puede decidir.",
+  "26": "Vas 39º con 162 puntos. Probabilidad de ganar la porra: <b>0,3%</b> (41º más probable) · top 3: 1,3%.\nTu campeona es España, como otros 27 — si gana, media porra sube contigo y apenas te diferencia.\nTu MVP (Pedri) lo compartís 8 — acertarlo te da poco filo.\nPichichi Kylian Mbappe como 34 más; tu cifra de 6 goles es alcanzable (lleva 6) — ese +20 extra puede decidir.\nNecesitas una carambola: que tus aciertos diferenciales salgan Y que pinchen todos los que van por delante con tus mismas elecciones.",
+  "27": "Vas 35º con 166 puntos. Probabilidad de ganar la porra: <b>0,8%</b> (31º más probable) · top 3: 3,1%.\nTu campeona es España, como otros 27 — si gana, media porra sube contigo y apenas te diferencia.\nTu MVP (Lamine Yamal) lo compartís 16 — acertarlo te da poco filo.\nPichichi Kylian Mbappe como 34 más; tu cifra de 9 goles es alcanzable (lleva 6) — ese +20 extra puede decidir.",
+  "28": "Vas 27º con 173 puntos. Probabilidad de ganar la porra: <b>0,4%</b> (40º más probable) · top 3: 1,9%.\nTu campeona es España, como otros 27 — si gana, media porra sube contigo y apenas te diferencia.\nTu MVP (Lamine Yamal) lo compartís 16 — acertarlo te da poco filo.\nPichichi Kylian Mbappe como 34 más; tu cifra de 7 goles es alcanzable (lleva 6) — ese +20 extra puede decidir.\nOjo: tus cruces bloqueados de la porra tardía no puntúan, vas con lastre respecto al resto.\nNecesitas una carambola: que tus aciertos diferenciales salgan Y que pinchen todos los que van por delante con tus mismas elecciones.",
+  "29": "Vas 36º con 166 puntos. Probabilidad de ganar la porra: <b>2,7%</b> (12º más probable) · top 3: 11,5%.\nTu campeona es Argentina (solo 4 la tenéis, 19,3% en la simulación): si gana, adelantas de golpe a la mayoría.\nTu MVP (Vinicius Jr) casi no lo comparte nadie: si acierta, son 20 puntos que casi nadie más suma.\nPichichi Kylian Mbappe como 34 más; tu cifra de 8 goles es alcanzable (lleva 6) — ese +20 extra puede decidir.\nOjo: tus cruces bloqueados de la porra tardía no puntúan, vas con lastre respecto al resto.",
+  "31": "Vas 20º con 177 puntos. Probabilidad de ganar la porra: <b>1,0%</b> (28º más probable) · top 3: 3,8%.\nTu campeona es Francia (solo 13 la tenéis, 22,3% en la simulación): si gana, adelantas de golpe a la mayoría.\nTu MVP (Kylian Mbappe) lo compartís 13 — acertarlo te da poco filo.\nPichichi Kylian Mbappe como 34 más; tu cifra de 7 goles es alcanzable (lleva 6) — ese +20 extra puede decidir.\nOjo: tus cruces bloqueados de la porra tardía no puntúan, vas con lastre respecto al resto.",
+  "32": "Vas 21º con 177 puntos. Probabilidad de ganar la porra: <b>1,2%</b> (23º más probable) · top 3: 4,8%.\nTu campeona es España, como otros 27 — si gana, media porra sube contigo y apenas te diferencia.\nTu MVP (Lamine Yamal) lo compartís 16 — acertarlo te da poco filo.\nPichichi Kylian Mbappe como 34 más; tu cifra de 6 goles es alcanzable (lleva 6) — ese +20 extra puede decidir.",
+  "33": "Vas 43º con 151 puntos. Probabilidad de ganar la porra: <b>1,7%</b> (18º más probable) · top 3: 2,8%.\nEres el único con Portugal campeona (3,7%): si sonara la flauta, el premio gordo es casi solo tuyo.\nTu MVP (Cristiano Ronaldo) casi no lo comparte nadie: si acierta, son 20 puntos que casi nadie más suma.\nPichichi Kylian Mbappe como 34 más; tu cifra de 6 goles es alcanzable (lleva 6) — ese +20 extra puede decidir.",
+  "38": "Vas 42º con 155 puntos. Probabilidad de ganar la porra: <b>0,1%</b> (45º más probable) · top 3: 0,9%.\nTu campeona es España, como otros 27 — si gana, media porra sube contigo y apenas te diferencia.\nTu MVP (Harry Kane) casi no lo comparte nadie: si acierta, son 20 puntos que casi nadie más suma.\nPichichi Kylian Mbappe como 34 más; tu cifra de 7 goles es alcanzable (lleva 6) — ese +20 extra puede decidir.\nNecesitas una carambola: que tus aciertos diferenciales salgan Y que pinchen todos los que van por delante con tus mismas elecciones.",
+  "39": "Vas 16º con 179 puntos. Probabilidad de ganar la porra: <b>3,5%</b> (8º más probable) · top 3: 8,0%.\nTu campeona es España, como otros 27 — si gana, media porra sube contigo y apenas te diferencia.\nTu MVP (Lamine Yamal) lo compartís 16 — acertarlo te da poco filo.\nPichichi Harry Kane como 3 más; tu cifra de 8 goles es alcanzable (lleva 5) — ese +20 extra puede decidir.",
+  "40": "Vas 46º con 138 puntos. Probabilidad de ganar la porra: <b>1,2%</b> (26º más probable) · top 3: 4,4%.\nTu campeona es Argentina (solo 4 la tenéis, 19,3% en la simulación): si gana, adelantas de golpe a la mayoría.\nTu MVP (Vinicius Jr) casi no lo comparte nadie: si acierta, son 20 puntos que casi nadie más suma.\nPichichi Kylian Mbappe como 34 más; tu cifra de 5 goles ya es imposible (lleva 6).\nOjo: tus cruces bloqueados de la porra tardía no puntúan, vas con lastre respecto al resto.",
+  "41": "Vas 19º con 178 puntos. Probabilidad de ganar la porra: <b>1,0%</b> (27º más probable) · top 3: 5,2%.\nTu campeona es España, como otros 27 — si gana, media porra sube contigo y apenas te diferencia.\nTu MVP (Kylian Mbappe) lo compartís 13 — acertarlo te da poco filo.\nPichichi Kylian Mbappe como 34 más; tu cifra de 8 goles es alcanzable (lleva 6) — ese +20 extra puede decidir.",
+  "42": "Vas 45º con 140 puntos. Probabilidad de ganar la porra: <b>0,3%</b> (42º más probable) · top 3: 1,1%.\nTu campeona es Francia (solo 13 la tenéis, 22,3% en la simulación): si gana, adelantas de golpe a la mayoría.\nTu MVP (Bruno Fernandes) casi no lo comparte nadie: si acierta, son 20 puntos que casi nadie más suma.\nTu pichichi (Julian Alvarez) es apuesta casi única; tu cifra de 6 goles es difícil (lleva 0).\nOjo: tus cruces bloqueados de la porra tardía no puntúan, vas con lastre respecto al resto.\nNecesitas una carambola: que tus aciertos diferenciales salgan Y que pinchen todos los que van por delante con tus mismas elecciones.",
+  "43": "Vas 37º con 166 puntos. Probabilidad de ganar la porra: <b>0,4%</b> (39º más probable) · top 3: 1,6%.\nTu campeona es España, como otros 27 — si gana, media porra sube contigo y apenas te diferencia.\nTu MVP (Lamine Yamal) lo compartís 16 — acertarlo te da poco filo.\nTu pichichi (Lionel Messi) es apuesta casi única; tu cifra de 5 goles ya es imposible (lleva 6).\nNecesitas una carambola: que tus aciertos diferenciales salgan Y que pinchen todos los que van por delante con tus mismas elecciones.",
+  "44": "Vas 38º con 166 puntos. Probabilidad de ganar la porra: <b>0,2%</b> (44º más probable) · top 3: 1,2%.\nTu campeona es España, como otros 27 — si gana, media porra sube contigo y apenas te diferencia.\nTu MVP (Pedri) lo compartís 8 — acertarlo te da poco filo.\nPichichi Kylian Mbappe como 34 más; tu cifra de 8 goles es alcanzable (lleva 6) — ese +20 extra puede decidir.\nNecesitas una carambola: que tus aciertos diferenciales salgan Y que pinchen todos los que van por delante con tus mismas elecciones.",
+  "45": "Vas 3º con 199 puntos. Probabilidad de ganar la porra: <b>5,1%</b> (5º más probable) · top 3: 14,1%.\nTu campeona es Francia (solo 13 la tenéis, 22,3% en la simulación): si gana, adelantas de golpe a la mayoría.\nTu MVP (Kylian Mbappe) lo compartís 13 — acertarlo te da poco filo.\nPichichi Kylian Mbappe como 34 más; tu cifra de 7 goles es alcanzable (lleva 6) — ese +20 extra puede decidir.",
+  "46": "Vas 22º con 177 puntos. Probabilidad de ganar la porra: <b>1,9%</b> (16º más probable) · top 3: 6,8%.\nTu campeona es España, como otros 27 — si gana, media porra sube contigo y apenas te diferencia.\nTu MVP (Lamine Yamal) lo compartís 16 — acertarlo te da poco filo.\nPichichi Harry Kane como 3 más; tu cifra de 6 goles es alcanzable (lleva 5) — ese +20 extra puede decidir.",
+  "48": "Vas 11º con 183 puntos. Probabilidad de ganar la porra: <b>4,2%</b> (7º más probable) · top 3: 13,1%.\nTu campeona es España, como otros 27 — si gana, media porra sube contigo y apenas te diferencia.\nTu MVP (Kylian Mbappe) lo compartís 13 — acertarlo te da poco filo.\nPichichi Kylian Mbappe como 34 más; tu cifra de 9 goles es alcanzable (lleva 6) — ese +20 extra puede decidir.",
+  "49": "Vas 9º con 185 puntos. Probabilidad de ganar la porra: <b>1,7%</b> (19º más probable) · top 3: 5,8%.\nTu campeona es España, como otros 27 — si gana, media porra sube contigo y apenas te diferencia.\nTu MVP (Pedri) lo compartís 8 — acertarlo te da poco filo.\nPichichi Kylian Mbappe como 34 más; tu cifra de 7 goles es alcanzable (lleva 6) — ese +20 extra puede decidir.",
+  "50": "Vas 8º con 187 puntos. Probabilidad de ganar la porra: <b>2,9%</b> (10º más probable) · top 3: 8,6%.\nTu campeona es Francia (solo 13 la tenéis, 22,3% en la simulación): si gana, adelantas de golpe a la mayoría.\nTu MVP (Kylian Mbappe) lo compartís 13 — acertarlo te da poco filo.\nPichichi Kylian Mbappe como 34 más; tu cifra de 7 goles es alcanzable (lleva 6) — ese +20 extra puede decidir.",
+  "51": "Vas 17º con 179 puntos. Probabilidad de ganar la porra: <b>2,0%</b> (15º más probable) · top 3: 6,5%.\nTu campeona es España, como otros 27 — si gana, media porra sube contigo y apenas te diferencia.\nTu MVP (Kylian Mbappe) lo compartís 13 — acertarlo te da poco filo.\nPichichi Kylian Mbappe como 34 más; tu cifra de 11 goles es difícil (lleva 6).",
+  "52": "Vas 4º con 196 puntos. Probabilidad de ganar la porra: <b>0,5%</b> (35º más probable) · top 3: 2,5%.\nTu campeona es España, como otros 27 — si gana, media porra sube contigo y apenas te diferencia.\nTu MVP (Pedri) lo compartís 8 — acertarlo te da poco filo.\nPichichi Kylian Mbappe como 34 más; tu cifra de 8 goles es alcanzable (lleva 6) — ese +20 extra puede decidir.",
+  "53": "Vas 40º con 162 puntos. Probabilidad de ganar la porra: <b>0,2%</b> (43º más probable) · top 3: 1,0%.\nTu campeona es España, como otros 27 — si gana, media porra sube contigo y apenas te diferencia.\nTu MVP (Vitinha) lo compartís 3 — acertarlo te da poco filo.\nPichichi Mikel Oyarzabal como 3 más; tu cifra de 5 goles es alcanzable (lleva 2) — ese +20 extra puede decidir.\nNecesitas una carambola: que tus aciertos diferenciales salgan Y que pinchen todos los que van por delante con tus mismas elecciones.",
+  "55": "Vas 41º con 156 puntos. Probabilidad de ganar la porra: <b>0,5%</b> (34º más probable) · top 3: 2,4%.\nTu campeona es Francia (solo 13 la tenéis, 22,3% en la simulación): si gana, adelantas de golpe a la mayoría.\nTu MVP (Pedri) lo compartís 8 — acertarlo te da poco filo.\nPichichi Kylian Mbappe como 34 más; tu cifra de 7 goles es alcanzable (lleva 6) — ese +20 extra puede decidir.",
+  "57": "Vas 14º con 180 puntos. Probabilidad de ganar la porra: <b>2,7%</b> (11º más probable) · top 3: 8,3%.\nTu campeona es España, como otros 27 — si gana, media porra sube contigo y apenas te diferencia.\nTu MVP (Lamine Yamal) lo compartís 16 — acertarlo te da poco filo.\nPichichi Kylian Mbappe como 34 más; tu cifra de 8 goles es alcanzable (lleva 6) — ese +20 extra puede decidir.\nOjo: tus cruces bloqueados de la porra tardía no puntúan, vas con lastre respecto al resto.",
+  "58": "Vas 34º con 167 puntos. Probabilidad de ganar la porra: <b>1,2%</b> (24º más probable) · top 3: 3,8%.\nTu campeona es España, como otros 27 — si gana, media porra sube contigo y apenas te diferencia.\nTu MVP (Pedri) lo compartís 8 — acertarlo te da poco filo.\nPichichi Kylian Mbappe como 34 más; tu cifra de 7 goles es alcanzable (lleva 6) — ese +20 extra puede decidir.",
+  "61": "Vas 29º con 172 puntos. Probabilidad de ganar la porra: <b>0,7%</b> (33º más probable) · top 3: 3,3%.\nTu campeona es España, como otros 27 — si gana, media porra sube contigo y apenas te diferencia.\nTu MVP (Lamine Yamal) lo compartís 16 — acertarlo te da poco filo.\nPichichi Mikel Oyarzabal como 3 más; tu cifra de 6 goles es difícil (lleva 2).",
+  "62": "Vas 13º con 181 puntos. Probabilidad de ganar la porra: <b>5,2%</b> (4º más probable) · top 3: 13,6%.\nTu campeona es Argentina (solo 4 la tenéis, 19,3% en la simulación): si gana, adelantas de golpe a la mayoría.\nTu MVP (Kylian Mbappe) lo compartís 13 — acertarlo te da poco filo.\nPichichi Kylian Mbappe como 34 más; tu cifra de 8 goles es alcanzable (lleva 6) — ese +20 extra puede decidir.",
+  "63": "Vas 18º con 179 puntos. Probabilidad de ganar la porra: <b>0,4%</b> (38º más probable) · top 3: 1,4%.\nTu campeona es España, como otros 27 — si gana, media porra sube contigo y apenas te diferencia.\nTu MVP (Lamine Yamal) lo compartís 16 — acertarlo te da poco filo.\nTu pichichi (Lamine Yamal) es apuesta casi única; tu cifra de 6 goles es difícil (lleva 1).\nNecesitas una carambola: que tus aciertos diferenciales salgan Y que pinchen todos los que van por delante con tus mismas elecciones.",
+  "64": "Vas 1º con 212 puntos. Probabilidad de ganar la porra: <b>7,9%</b> (3º más probable) · top 3: 18,8%.\nTu campeona es España, como otros 27 — si gana, media porra sube contigo y apenas te diferencia.\nTu MVP (Kylian Mbappe) lo compartís 13 — acertarlo te da poco filo.\nPichichi Kylian Mbappe como 34 más; tu cifra de 8 goles es alcanzable (lleva 6) — ese +20 extra puede decidir.",
+  "65": "Vas 25º con 174 puntos. Probabilidad de ganar la porra: <b>2,3%</b> (14º más probable) · top 3: 8,5%.\nTu campeona es Francia (solo 13 la tenéis, 22,3% en la simulación): si gana, adelantas de golpe a la mayoría.\nTu MVP (Kylian Mbappe) lo compartís 13 — acertarlo te da poco filo.\nPichichi Kylian Mbappe como 34 más; tu cifra de 8 goles es alcanzable (lleva 6) — ese +20 extra puede decidir.",
+  "66": "Vas 23º con 176 puntos. Probabilidad de ganar la porra: <b>1,4%</b> (22º más probable) · top 3: 5,7%.\nTu campeona es Francia (solo 13 la tenéis, 22,3% en la simulación): si gana, adelantas de golpe a la mayoría.\nTu MVP (Kylian Mbappe) lo compartís 13 — acertarlo te da poco filo.\nPichichi Kylian Mbappe como 34 más; tu cifra de 9 goles es alcanzable (lleva 6) — ese +20 extra puede decidir.",
+  "67": "Vas 2º con 211 puntos. Probabilidad de ganar la porra: <b>14,2%</b> (1º más probable) · top 3: 33,4%.\nTu campeona es Francia (solo 13 la tenéis, 22,3% en la simulación): si gana, adelantas de golpe a la mayoría.\nTu MVP (Kylian Mbappe) lo compartís 13 — acertarlo te da poco filo.\nPichichi Kylian Mbappe como 34 más; tu cifra de 7 goles es alcanzable (lleva 6) — ese +20 extra puede decidir.\nY tu as: la cláusula de desempate — ganas TODOS los empates a puntos.",
+  "68": "Vas 26º con 174 puntos. Probabilidad de ganar la porra: <b>0,9%</b> (29º más probable) · top 3: 3,5%.\nTu campeona es Francia (solo 13 la tenéis, 22,3% en la simulación): si gana, adelantas de golpe a la mayoría.\nTu MVP (Lamine Yamal) lo compartís 16 — acertarlo te da poco filo.\nPichichi Kylian Mbappe como 34 más; tu cifra de 7 goles es alcanzable (lleva 6) — ese +20 extra puede decidir.",
+  "69": "Vas 12º con 182 puntos. Probabilidad de ganar la porra: <b>10,3%</b> (2º más probable) · top 3: 18,1%.\nTu campeona es Argentina (solo 4 la tenéis, 19,3% en la simulación): si gana, adelantas de golpe a la mayoría.\nTu MVP (Lionel Messi) casi no lo comparte nadie: si acierta, son 20 puntos que casi nadie más suma.\nPichichi Kylian Mbappe como 34 más; tu cifra de 7 goles es alcanzable (lleva 6) — ese +20 extra puede decidir.",
+  "71": "Vas 10º con 185 puntos. Probabilidad de ganar la porra: <b>1,5%</b> (20º más probable) · top 3: 5,6%.\nTu campeona es España, como otros 27 — si gana, media porra sube contigo y apenas te diferencia.\nTu MVP (Pedri) lo compartís 8 — acertarlo te da poco filo.\nPichichi Kylian Mbappe como 34 más; tu cifra de 10 goles es difícil (lleva 6).",
+  "72": "Vas 5º con 193 puntos. Probabilidad de ganar la porra: <b>3,4%</b> (9º más probable) · top 3: 12,0%.\nTu campeona es Francia (solo 13 la tenéis, 22,3% en la simulación): si gana, adelantas de golpe a la mayoría.\nTu MVP (Lamine Yamal) lo compartís 16 — acertarlo te da poco filo.\nPichichi Kylian Mbappe como 34 más; tu cifra de 6 goles es alcanzable (lleva 6) — ese +20 extra puede decidir.",
+  "74": "Vas 30º con 172 puntos. Probabilidad de ganar la porra: <b>1,9%</b> (17º más probable) · top 3: 6,6%.\nTu campeona es Francia (solo 13 la tenéis, 22,3% en la simulación): si gana, adelantas de golpe a la mayoría.\nTu MVP (Kylian Mbappe) lo compartís 13 — acertarlo te da poco filo.\nPichichi Kylian Mbappe como 34 más; tu cifra de 9 goles es alcanzable (lleva 6) — ese +20 extra puede decidir.",
+  "75": "Vas 32º con 171 puntos. Probabilidad de ganar la porra: <b>2,6%</b> (13º más probable) · top 3: 8,2%.\nTu campeona es España, como otros 27 — si gana, media porra sube contigo y apenas te diferencia.\nTu MVP (Lamine Yamal) lo compartís 16 — acertarlo te da poco filo.\nPichichi Kylian Mbappe como 34 más; tu cifra de 10 goles es difícil (lleva 6).",
+  "76": "Vas 31º con 172 puntos. Probabilidad de ganar la porra: <b>1,2%</b> (25º más probable) · top 3: 6,8%.\nTu campeona es Francia (solo 13 la tenéis, 22,3% en la simulación): si gana, adelantas de golpe a la mayoría.\nTu MVP (Kylian Mbappe) lo compartís 13 — acertarlo te da poco filo.\nPichichi Kylian Mbappe como 34 más; tu cifra de 6 goles es alcanzable (lleva 6) — ese +20 extra puede decidir."
  }
 }
