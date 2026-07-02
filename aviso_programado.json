@@ -1,0 +1,7 @@
+[
+ {
+  "id": "probganar-2026-07-02",
+  "at": "2026-07-02T15:05:00+00:00",
+  "text": "🎲 <b>NUEVO COMANDO: /probabilidadganar</b>\n\nHe simulado 12.000 veces lo que queda de Mundial (con el cuadro real, las reglas de puntos de la web y hasta los pichichis) y el bot te saca la clasificación con la probabilidad de ganar la porra de cada uno.\n\nY al final, con /porque, te explica TU caso: por qué estás donde estás y qué necesitas para ganar. Cada uno tiene el suyo.\n\nSe recalcula automáticamente después de cada partido."
+ }
+]

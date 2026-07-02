@@ -815,6 +815,35 @@ def load_probs():
         return None
 
 
+def check_scheduled_broadcasts(token, state):
+    """Envía los avisos programados en aviso_programado.json cuya hora ya pasó.
+    Se marca cada id en el estado (persistido) para no reenviar tras un relevo."""
+    try:
+        with open(os.path.join(HERE, "aviso_programado.json"), encoding="utf-8") as f:
+            avisos = json.load(f)
+    except Exception:
+        return
+    sent = state.setdefault("avisos_enviados", [])
+    now = datetime.now(timezone.utc)
+    for av in avisos:
+        aid = av.get("id")
+        if not aid or aid in sent or not av.get("text"):
+            continue
+        try:
+            at = datetime.fromisoformat(av.get("at", ""))
+        except Exception:
+            continue
+        if now < at:
+            continue
+        n = 0
+        for ucid, uu in state["users"].items():
+            if uu.get("confirmed") and send(token, ucid, "📢 " + av["text"]):
+                n += 1
+        sent.append(aid)
+        persist(state, force=True)
+        print("Aviso programado '{}' enviado a {} personas.".format(aid, n))
+
+
 _probsim = {"proc": None, "ts": 0.0}
 
 
@@ -2086,6 +2115,8 @@ def run_loop():
             if time.monotonic() - last_match > 120:
                 check_matches(token, porras, state)
                 last_match = time.monotonic()
+
+            check_scheduled_broadcasts(token, state)
 
             if time.monotonic() - last_scorers > 1200:  # goleadores cada 20 min (incremental)
                 if refresh_scorers(state):
