@@ -407,17 +407,23 @@ for _grp, _lbl in [(RESET_CMDS, "start"), (RANK_CMDS, "clasificacion"),
     for _c in _grp:
         CMD_LABEL[_c] = _lbl
 
-AYUDA = ("<b>Comandos</b>\n"
-         "/clasificacion — la clasificación entera\n"
-         "/miporra — tus pronósticos y próximos partidos\n"
-         "/compararprediccion — comparar tus pronósticos con otro\n"
-         "/prediccionesdelresto — las predicciones de todos para un partido\n"
-         "/probabilidadganar — clasificación estimada (12.000 simulaciones)\n"
-         "/silencio — pausar los avisos\n"
-         "/avisos — reactivar los avisos\n"
-         "/web — abrir la web de la porra\n"
-         "/start — identificarte o cambiar de identidad\n"
-         "/ayuda — esta ayuda")
+_AYUDA_PROB = "/probabilidadganar — clasificación estimada (12.000 simulaciones)\n"
+
+
+def ayuda_text():
+    """La ayuda; sin la línea de probabilidades desde que empiezan los cuartos."""
+    prob = "" if probs_locked() else _AYUDA_PROB
+    return ("<b>Comandos</b>\n"
+            "/clasificacion — la clasificación entera\n"
+            "/miporra — tus pronósticos y próximos partidos\n"
+            "/compararprediccion — comparar tus pronósticos con otro\n"
+            "/prediccionesdelresto — las predicciones de todos para un partido\n"
+            + prob +
+            "/silencio — pausar los avisos\n"
+            "/avisos — reactivar los avisos\n"
+            "/web — abrir la web de la porra\n"
+            "/start — identificarte o cambiar de identidad\n"
+            "/ayuda — esta ayuda")
 
 # Lista para el menú de comandos de Telegram (setMyCommands).
 BOT_COMMANDS = [
@@ -875,7 +881,23 @@ def probs_stale(matches):
     return n != d.get("n_finished")
 
 
+PROBS_LOCKED_MSG = ("🔒 Las probabilidades se retiraron al empezar los cuartos — con tan "
+                    "pocos partidos ya no tendría gracia. ¡Que gane el mejor!")
+
+
+def probs_locked():
+    """True desde el inicio del primer cuarto de final: se retiran las probabilidades."""
+    k = (load_probs() or {}).get("qf_kickoff")
+    try:
+        return bool(k) and datetime.now(timezone.utc) >= datetime.fromisoformat(k)
+    except Exception:
+        return False
+
+
 def cmd_probganar(token, cid, pid):
+    if probs_locked():
+        send(token, cid, PROBS_LOCKED_MSG)
+        return
     d = load_probs()
     if not d:
         send(token, cid, "Las probabilidades no están disponibles ahora mismo.")
@@ -894,6 +916,9 @@ def cmd_probganar(token, cid, pid):
 
 
 def cmd_porque(token, cid, pid):
+    if probs_locked():
+        send(token, cid, PROBS_LOCKED_MSG)
+        return
     d = load_probs()
     why = (d or {}).get("why", {}).get(str(pid))
     if not why:
@@ -1273,7 +1298,7 @@ def process_chat(token, porras, state, updates):
             continue
         # /ayuda y /web funcionan siempre, estés identificado o no.
         if cmd in HELP_CMDS:
-            send(token, cid, AYUDA)
+            send(token, cid, ayuda_text())
             continue
         if cmd in WEB_CMDS:
             send(token, cid, "🌐 Web de la porra:\n" + WEB_URL,
@@ -1316,7 +1341,7 @@ def process_chat(token, porras, state, updates):
                 u["muted"] = False
                 send(token, cid, "🔔 Avisos reactivados.")
             elif text.startswith("/"):
-                send(token, cid, "No conozco ese comando.\n\n" + AYUDA)
+                send(token, cid, "No conozco ese comando.\n\n" + ayuda_text())
             continue
         if cmd in RESET_CMDS or text.startswith("/") or not u.get("asked"):
             ask(token, cid, u)
@@ -2063,7 +2088,7 @@ def check_matches(token, porras, state):
     # Probabilidades: recalcular en segundo plano si no reflejan los partidos ya jugados
     # (cubre tanto el final que acaba de enviarse como huecos de cuando el bot estuvo caído).
     try:
-        if probs_stale(matches):
+        if not probs_locked() and probs_stale(matches):
             launch_probsim()
     except Exception as e:
         print("probs_stale error:", e, file=sys.stderr)
@@ -2093,9 +2118,12 @@ def run_loop():
         print("Falta TELEGRAM_TOKEN.", file=sys.stderr)
         sys.exit(2)
 
-    # Sincronizar el menú de comandos de Telegram con BOT_COMMANDS en cada arranque.
+    # Sincronizar el menú de comandos de Telegram en cada arranque (sin /probabilidadganar
+    # desde que empiezan los cuartos: los relevos cada 30 min lo retiran solos).
     try:
-        tg(token, "setMyCommands", commands=BOT_COMMANDS)
+        cmds = [c for c in BOT_COMMANDS
+                if not (probs_locked() and c["command"] == "probabilidadganar")]
+        tg(token, "setMyCommands", commands=cmds)
     except Exception as e:
         print("setMyCommands error:", e, file=sys.stderr)
 

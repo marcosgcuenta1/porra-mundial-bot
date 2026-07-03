@@ -481,7 +481,12 @@ def main():
     out = {"gen": now_es.strftime("%d/%m %H:%M"),
            "estado": "actualizado {} · tras {} de 22 partidos de eliminatoria".format(
                now_es.strftime("%d/%m %H:%M"), n_fin),
-           "n_finished": n_fin, "sims": N_SIMS, "claves": claves,
+           "n_finished": n_fin, "sims": N_SIMS,
+           # los comandos se bloquean desde el inicio del primer cuarto (pierde la gracia)
+           "qf_kickoff": min((m.get("event_date") for m in matches
+                              if ROUND_OF.get((m.get("round_name") or "").strip().lower()) == "qf"
+                              and m.get("event_date")), default=None),
+           "claves": claves,
            "lista": [[pl["pid"], pl["name"], pct(wins.get(pl["pid"], 0) / N_SIMS),
                       pct(top3.get(pl["pid"], 0) / N_SIMS)] for pl in by_prob],
            "why": {str(pl["pid"]): why(pl) for pl in players}}
