@@ -3,5 +3,10 @@
   "id": "probganar-2026-07-02",
   "at": "2026-07-02T16:30:00+00:00",
   "text": "🎲 <b>NUEVO COMANDO: /probabilidadganar</b>\n\nHe simulado 12.000 veces lo que queda de Mundial — con el cuadro real, las reglas de puntos de la web y las <b>cuotas reales de las casas de apuestas</b> — y el bot te saca la probabilidad de cada uno de ganar la porra y de acabar en el podio.\n\nY al final, con /porque, te explica TU caso: por qué estás donde estás y qué necesitas para ganar. Cada uno tiene el suyo.\n\nSe recalcula automáticamente después de cada partido."
+ },
+ {
+  "id": "nueva-api-2026-07-06",
+  "at": "2026-07-06T14:45:00+00:00",
+  "text": "🔧 <b>Bot actualizado</b>\n\nEl bot ya está conectado a la nueva API de resultados (la misma que usa la web de la porra), así que la clasificación, los marcadores y los avisos vuelven a estar completamente al día."
  }
 ]
