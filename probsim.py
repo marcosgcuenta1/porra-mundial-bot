@@ -164,10 +164,34 @@ def build_bracket(matches, porras):
     return nodes, n_fin
 
 
+def overlay_proxy_results(nodes, proxy_matches):
+    """Sobrescribe en los nodos del cuadro (estructura de bzzoiro) los resultados del PROXY
+    de la web (fuente de verdad de marcadores y ganadores). Casa por ronda + equipos."""
+    idx = {}
+    for m in proxy_matches:
+        pfx = ROUND_OF.get((m.get("round_name") or "").strip().lower())
+        h, a = bot.match_team(m.get("home_team")), bot.match_team(m.get("away_team"))
+        if pfx and h and a:
+            idx[(pfx, frozenset((h, a)))] = m
+    for nd in nodes:
+        if not (nd["home"] and nd["away"]):
+            continue
+        m = idx.get((nd["pfx"], frozenset((nd["home"], nd["away"]))))
+        if m is None:
+            continue
+        fin = (m.get("status") or "").lower() in bot.FINISHED_ST
+        nd["fin"], nd["win"] = fin, (bot._match_winner(m) if fin else None)
+        sh, sa = m.get("home_score"), m.get("away_score")
+        if bot.match_team(m.get("home_team")) != nd["home"]:
+            sh, sa = sa, sh
+        nd["sh"], nd["sa"] = sh, sa
+
+
 def main():
     random.seed()
     porras = bot.fetch_porras()
-    matches = bot.fetch_matches()
+    matches = bot.fetch_matches()          # proxy de la web: resultados/marcadores de verdad
+    struct = bot.fetch_matches_bzzoiro()   # bzzoiro: estructura del cuadro (refs W##/L##)
     CURR = bot.web_points(porras, matches)
     # goles reales: del estado del bot si hay clave; si no, ESPN directo
     goals = {}
@@ -180,7 +204,12 @@ def main():
         bot.refresh_scorers(st)
         goals = st["scorers"]["goals"]
 
-    nodes, n_fin = build_bracket(matches, porras)
+    nodes, _ = build_bracket(struct, porras)
+    overlay_proxy_results(nodes, matches)
+    # nº de KO acabados según el PROXY (mismo criterio que probs_stale en el bot)
+    n_fin = sum(1 for m in matches
+                if ROUND_OF.get((m.get("round_name") or "").strip().lower())
+                and (m.get("status") or "").lower() in bot.FINISHED_ST and bot._match_winner(m))
 
     # consenso de la porra en los 16avos pendientes
     crowd = {}

@@ -47,7 +47,7 @@ TEAMS = {
     "NZL": ("N.Zelanda",       "🇳🇿", ["nzl", "nzelanda", "nuevazelanda", "newzealand"]),
 
     "ESP": ("España",          "🇪🇸", ["esp", "espana", "spain"]),
-    "CPV": ("Cabo Verde",      "🇨🇻", ["cpv", "caboverde", "capeverde"]),
+    "CPV": ("Cabo Verde",      "🇨🇻", ["cpv", "caboverde", "capeverde", "capeverdeislands"]),
     "KSA": ("Arabia Saudita",  "🇸🇦", ["ksa", "sau", "arabiasaudita", "saudiarabia", "arabiasaudi"]),
     "URU": ("Uruguay",         "🇺🇾", ["uru", "uruguay"]),
 

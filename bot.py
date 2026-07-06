@@ -44,7 +44,8 @@ STATE_KEY = os.environ.get("BOT_STATE_KEY")  # si está, el estado se guarda CIF
 
 COMIENZO_MAX_RETRASO_H = 6
 GROUP_LETTERS = "ABCDEFGHIJKL"
-LIVE_ST = {"inprogress", "1h", "ht", "2h", "et", "bt", "p", "break", "live", "penalties"}
+LIVE_ST = {"inprogress", "1h", "ht", "2h", "et", "bt", "p", "break", "live", "penalties",
+           "in_play", "paused", "1st_half", "2nd_half", "halftime", "extra_time"}
 FINISHED_ST = {"finished", "ft", "aet", "ap", "after_extra_time", "after_penalties"}
 ESP_TZ = timezone(timedelta(hours=2))  # España en verano (CEST), todo el Mundial
 
@@ -240,10 +241,24 @@ def display_name(nombre, apellidos):
     return re.sub(r"\b\w", lambda m: m.group().upper(), full, flags=re.UNICODE)
 
 
+PROXY_URL = "https://mundial-proxy.cesaresteban18.workers.dev/matches"
+
+
+def fetch_matches_proxy():
+    """Fixtures del MISMO proxy que usa la web de César (football-data.org). Solo para el
+    ranking: garantiza que los puntos salen de los mismos datos que muestra su web. Los ids
+    difieren de los de bzzoiro, así que NO vale para el estado de avisos."""
+    r = requests.get(PROXY_URL, timeout=25)
+    if r.status_code != 200:
+        raise RuntimeError("proxy {}".format(r.status_code))
+    d = r.json()
+    return d.get("results", d if isinstance(d, list) else [])
+
+
 def web_points(porras, matches):
     """Clasificación = el MOTOR REAL de la web de César (su `calcPuntos`), ejecutado en Node
-    sobre los mismos datos (porras de Supabase + resultados de la API). El bot NO calcula la
-    puntuación: descarga el JS de la web y lee lo que produce. Devuelve {pid: total}.
+    sobre los mismos datos que muestra su web (los fixtures ya vienen de SU proxy vía
+    fetch_matches). El bot NO calcula la puntuación: ejecuta el JS de la web y lee el resultado.
     Lanza RuntimeError si la web no está accesible o su motor falla (el loop reintenta)."""
     payload = json.dumps({"porras": porras, "fixtures": matches})
     try:
@@ -889,7 +904,7 @@ def probs_locked():
     """True desde el inicio del primer cuarto de final: se retiran las probabilidades."""
     k = (load_probs() or {}).get("qf_kickoff")
     try:
-        return bool(k) and datetime.now(timezone.utc) >= datetime.fromisoformat(k)
+        return bool(k) and datetime.now(timezone.utc) >= parse_dt(k)
     except Exception:
         return False
 
@@ -1362,7 +1377,10 @@ def process_chat(token, porras, state, updates):
 # --------------------------------------------------------------------------- #
 # Partidos
 # --------------------------------------------------------------------------- #
-def fetch_matches():
+def fetch_matches_bzzoiro():
+    """Fuente antigua (bzzoiro). Se mantiene como respaldo y para la ESTRUCTURA del cuadro
+    en probsim (sus refs W##/L##, que el proxy no trae). OJO: desde julio su
+    extra_time_score son solo los goles DE la prórroga, no el marcador a 120'."""
     r = requests.get(SPORTS_URL, headers={"Authorization": "Token " + SPORTS_KEY}, timeout=30)
     if r.status_code != 200:
         # Un error puntual NO debe tumbar el bucle (lo captura run_loop y reintenta).
@@ -1370,8 +1388,19 @@ def fetch_matches():
     return r.json().get("results", [])
 
 
+def fetch_matches():
+    """Partidos del MISMO proxy que usa la web de César (football-data.org): resultados y
+    marcadores idénticos a los de la web. Si el proxy falla, respaldo en bzzoiro."""
+    try:
+        return fetch_matches_proxy()
+    except Exception as e:
+        print("proxy caído, uso bzzoiro:", e, file=sys.stderr)
+        return fetch_matches_bzzoiro()
+
+
 def parse_dt(s):
-    return datetime.fromisoformat(s) if s else None
+    # el proxy usa sufijo 'Z', que fromisoformat de Py3.9 no acepta
+    return datetime.fromisoformat(s.replace("Z", "+00:00")) if s else None
 
 
 def confirmed_users(state, porras_by_pid):
@@ -1439,10 +1468,16 @@ def _match_winner(m):
         return home
     if sa > sh:
         return away
+    # Empate a 120': primero el campo winner explícito de la API (como la web), luego los
+    # penaltis, y como último recurso el override manual de la web (si volviera a existir).
+    w = m.get("winner")
+    if w == "HOME_TEAM":
+        return home
+    if w == "AWAY_TEAM":
+        return away
     pen = m.get("penalty_shootout") or {}
     if pen:
         return home if (pen.get("home", 0) or 0) > (pen.get("away", 0) or 0) else away
-    # Empate sin penaltis en la API: usar el override manual de la web de César si lo hay.
     ovr = match_team(ko_overrides().get(m.get("id")))
     return ovr if ovr in (home, away) else None
 
@@ -1620,12 +1655,17 @@ def ko_results_list(matches):
         elif sa > sh:
             winner = away
         else:
+            # Empate a 120': primero el campo winner del proxy (como la web), luego penaltis,
+            # luego el override manual; si nada, PENDIENTE (⏳ en /miporra).
+            wf = m.get("winner")
             ps = m.get("penalty_shootout") or {}
-            if ps:
+            if wf == "HOME_TEAM":
+                winner = home
+            elif wf == "AWAY_TEAM":
+                winner = away
+            elif ps:
                 winner = home if (ps.get("home", 0) or 0) > (ps.get("away", 0) or 0) else away
             else:
-                # Sin penaltis en la API: usar el override manual de César si lo hay; si no,
-                # PENDIENTE (winner=None) para que el partido aparezca en /miporra como ⏳.
                 wc = match_team(ko_overrides().get(m.get("id")))
                 winner = home if wc == match_team(home) else (away if wc == match_team(away) else None)
         out.append({"pfx": pfx, "home": home, "away": away, "winner": winner, "sh": sh, "sa": sa,
@@ -1976,6 +2016,16 @@ def check_matches(token, porras, state):
         state["seeded_ko"] = True
         persist(state, force=True)
         print("Eliminatoria sembrada: {} partidos de KO marcados.".format(len(relevant_ko)))
+
+    # Migración a los ids del proxy (jul-2026): los ids de partido cambiaron de fuente
+    # (bzzoiro -> proxy de la web). Marcar TODO lo ya empezado/acabado como avisado una
+    # sola vez, para no reenviar avisos antiguos con los ids nuevos.
+    if not state.get("seeded_proxy"):
+        _seed(relevant)
+        _seed(relevant_ko)
+        state["seeded_proxy"] = True
+        persist(state, force=True)
+        print("Migración a ids del proxy: partidos ya jugados marcados como avisados.")
 
     comienzo_set = set(state["comienzo"])
     final_set = set(state["final"])
