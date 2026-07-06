@@ -181,7 +181,10 @@ def overlay_proxy_results(nodes, proxy_matches):
             continue
         fin = (m.get("status") or "").lower() in bot.FINISHED_ST
         nd["fin"], nd["win"] = fin, (bot._match_winner(m) if fin else None)
-        sh, sa = m.get("home_score"), m.get("away_score")
+        # marcador a 120': el proxy trae el 90' en home_score y el final en extra_time_score
+        et = m.get("extra_time_score") or {}
+        sh = et.get("home") if et.get("home") is not None else m.get("home_score")
+        sa = et.get("away") if et.get("away") is not None else m.get("away_score")
         if bot.match_team(m.get("home_team")) != nd["home"]:
             sh, sa = sa, sh
         nd["sh"], nd["sa"] = sh, sa

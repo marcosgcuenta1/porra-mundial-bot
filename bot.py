@@ -473,6 +473,8 @@ def cmd_ranking_full(token, cid, pid, porras):
     lines = ["<b>CLASIFICACIÓN COMPLETA</b>", "━━━━━━━━━━━━━━━━"]
     for i, (p_id, name, pts) in enumerate(rk):
         lines.append(rank_line(i, name, pts, p_id == pid))
+    if not probs_locked():
+        lines.append("\nProbabilidades de ganar la porra: /probabilidadganar")
     send(token, cid, "\n".join(lines))
 
 
