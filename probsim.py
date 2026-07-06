@@ -510,9 +510,11 @@ def main():
         n_top_g1, top_g1.title(), g1_now, flags + "%")
 
     now_es = datetime.now(timezone.utc).astimezone(bot.ESP_TZ)
+    n_ko_total = sum(1 for m in matches
+                     if ROUND_OF.get((m.get("round_name") or "").strip().lower()))
     out = {"gen": now_es.strftime("%d/%m %H:%M"),
-           "estado": "actualizado {} · tras {} de 22 partidos de eliminatoria".format(
-               now_es.strftime("%d/%m %H:%M"), n_fin),
+           "estado": "actualizado {} · tras {} de {} partidos de eliminatoria".format(
+               now_es.strftime("%d/%m %H:%M"), n_fin, n_ko_total),
            "n_finished": n_fin, "sims": N_SIMS,
            # los comandos se bloquean desde el inicio del primer cuarto (pierde la gracia)
            "qf_kickoff": min((m.get("event_date") for m in matches
