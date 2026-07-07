@@ -1008,7 +1008,11 @@ def ko_pick_eval(pfx, pred, ko_list):
         return ("", 0, False)
     outcome, r = ko_team_outcome(pfx, team, ko_list)
     if outcome is None:
-        return ("", 0, False)              # su partido de esa ronda aún no se ha jugado
+        # Aún no ha jugado esa ronda... salvo que ya esté ELIMINADO (cayó antes de llegar,
+        # o en p3f: ganó su semifinal y juega la final): la apuesta está muerta -> ❌.
+        if ko_team_dead(pfx, team, ko_list):
+            return ("❌", 0, True)
+        return ("", 0, False)
     if outcome == "pending":
         return ("⏳", None, True)           # jugado, esperando el resultado (penaltis)
     tp, sp, fp = KO_PTS[pfx]
@@ -1699,6 +1703,24 @@ def _find_real_ko(pfx, pred, ko_list):
         if r["pfx"] == pfx and _names_match(r["winner"], pred["winner"]):
             return r
     return None
+
+
+_KO_BEFORE = {"c": (), "oct": ("c",), "qf": ("c", "oct"), "sf": ("c", "oct", "qf"),
+              "p3f": ("c", "oct", "qf"), "fin2": ("c", "oct", "qf", "sf")}
+
+
+def ko_team_dead(pfx, team, ko_list):
+    """True si 'team' ya no puede ganar un partido de la ronda 'pfx': cayó en una ronda
+    anterior, o (para el 3er puesto) ganó su semifinal y por tanto juega la final."""
+    for r in (ko_list or []):
+        if r.get("pending"):
+            continue
+        if r["pfx"] in _KO_BEFORE.get(pfx, ()) and team in (r.get("home_c"), r.get("away_c")) \
+                and r.get("winner_c") != team:
+            return True
+        if pfx == "p3f" and r["pfx"] == "sf" and r.get("winner_c") == team:
+            return True
+    return False
 
 
 def ko_team_outcome(pfx, team, ko_list):
